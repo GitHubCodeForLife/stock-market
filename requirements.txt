@@ -1,0 +1,12 @@
+Flask
+gunicorn
+python-dotenv
+numpy 
+pandas
+seaborn 
+sklearn
+dash
+dash_core_components
+dash_html_components
+keras
+tensorflow
