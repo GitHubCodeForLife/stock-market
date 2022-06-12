@@ -1,19 +1,25 @@
 import unittest
 from jobs.WebSocketJob import WebSocketJob
+import pandas as pd
 
 
 class WebSocketJobTest(unittest.TestCase):
 
     def test_upper(self):
         def callback(result):
-            print("Callback: " + result)
+            print("Callback: " + str(result))
 
         websocketJob = WebSocketJob()
         websocketJob.addListener(callback)
         websocketJob.start()
-        # websocketJob.join()
 
         self.assertEqual('foo'.upper(), 'FOO')
+
+    # def saveToFileCSV(self, data):
+    #     file = "./static/data/tuan.csv"
+    #     df = pd.DataFrame(data)
+    #     df.to_csv(file, index=False)
+
 
 # def test_isupper(self):
 #     self.assertTrue('FOO'.isupper())

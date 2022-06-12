@@ -11,5 +11,4 @@ dash_html_components
 keras
 tensorflow
 schedule
-python-binance
-pytest
+polygon-api-client

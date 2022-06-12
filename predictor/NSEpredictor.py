@@ -2,6 +2,9 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import load_model
 import numpy as np
+from helper.Constant import Constant
+
+scaler = MinMaxScaler(feature_range=(0, 1))
 
 
 class NSEpredictor:
@@ -9,21 +12,24 @@ class NSEpredictor:
     valid = ""
 
     def __init__(self):
+        pass
+
+    def run(self, trainFile=Constant.TRAIN_FILE, filename_model=Constant.MODEL_FILE):
         print("Stock Predictor")
 
-        df = self.loadData("./static/data/NSE-TATA.csv")
+        df = self.loadData(trainFile)
         print("Data loaded")
 
         dataset = self.cleanData(df)
         print("Data cleaned")
 
-        scaler, train, valid = self.normalizeData(dataset)
+        train, valid = self.normalizeData(dataset)
         print("Data normalized")
 
-        model = self.loadModel("./static/data/saved_model.h5")
+        model = self.loadModel(filename_model)
         print("Model loaded")
 
-        closing_price = self.predict(model, scaler, dataset, valid)
+        closing_price = self.predict(model, dataset, valid)
         print("Prediction done")
 
         train, valid = self.visualize(closing_price, dataset)
@@ -52,18 +58,20 @@ class NSEpredictor:
         new_data.index = new_data.Date
         new_data.drop("Date", axis=1, inplace=True)
         dataset = new_data.values
-        train = dataset[0:987, :]
-        valid = dataset[987:, :]
+        ex = len(new_data)*0.8 - 1
+        ex = int(ex)
 
-        scaler = MinMaxScaler(feature_range=(0, 1))
+        train = dataset[0:ex, :]
+        valid = dataset[ex:, :]
+
         scaled_data = scaler.fit_transform(dataset)
 
-        return scaler, train, valid
+        return train, valid
 
     def loadModel(self, filename):
         return load_model(filename)
 
-    def predict(self, model, scaler, new_data, valid):
+    def predict(self, model, new_data, valid):
         inputs = new_data[len(new_data) - len(valid) - 60:].values
         inputs = inputs.reshape(-1, 1)
         inputs = scaler.transform(inputs)
@@ -80,7 +88,9 @@ class NSEpredictor:
         return closing_price
 
     def visualize(self, closing_price, new_data):
-        train = new_data[:987]
-        valid = new_data[987:]
+        ex = int(len(new_data)*0.8 - 1)
+
+        train = new_data[:ex]
+        valid = new_data[ex:]
         valid['Predictions'] = closing_price
         return train, valid

@@ -4,7 +4,9 @@ To run this app you must flow the following steps:
 - flask run (if you don't install Flask, please install it first - pip install Flask)
 
 To Run Test:
-"""py -m pytest -v test/WebSocketJobTest.py"""
+"""
+py -m pytest -v test/WebSocketJobTest.py
+"""
 
 - python3 -m unittest test_app.py
 - py -m unittest ./test/WebSocketJobTest.py
