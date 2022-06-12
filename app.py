@@ -6,12 +6,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 import pandas as pd
 from predictor.NSEpredictor import NSEpredictor
-from modeltrainer.LSTMTrainer import LSTMTrainer
-from jobs.simplejob import SimpleJob
-
-
-# lstmTrainer = LSTMTrainer()
-
+from jobs.WebSocketJob import WebSocketJob
 
 app = dash.Dash()
 server = app.server
@@ -23,15 +18,16 @@ valid = nseTrainer.valid
 test = 0
 
 
-def callback():
-    print("Callback")
+def callback(result):
+    print("Callback: " + result)
     global test
     test = 10
 
 
-simpleJob = SimpleJob()
-simpleJob.setCallback(callback)
-simpleJob.start()
+websocketJob = WebSocketJob()
+websocketJob.addListener(callback)
+websocketJob.start()
+
 
 df = pd.read_csv("./static/data/stock_data.csv")
 
@@ -124,8 +120,8 @@ app.layout = html.Div([
 ])
 
 
-@ app.callback(Output('highlow', 'figure'),
-               [Input('my-dropdown', 'value')])
+@app.callback(Output('highlow', 'figure'),
+              [Input('my-dropdown', 'value')])
 def update_graph(selected_dropdown):
     dropdown = {"TSLA": "Tesla", "AAPL": "Apple",
                 "FB": "Facebook", "MSFT": "Microsoft", }
@@ -162,8 +158,8 @@ def update_graph(selected_dropdown):
     return figure
 
 
-@ app.callback(Output('volume', 'figure'),
-               [Input('my-dropdown2', 'value')])
+@app.callback(Output('volume', 'figure'),
+              [Input('my-dropdown2', 'value')])
 def update_graph(selected_dropdown_value):
     dropdown = {"TSLA": "Tesla", "AAPL": "Apple",
                 "FB": "Facebook", "MSFT": "Microsoft", }
