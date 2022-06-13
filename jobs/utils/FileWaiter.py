@@ -9,6 +9,18 @@ class FileWaiter:
     def __init__(self):
         pass
 
+    @staticmethod
+    def createFileName(symbol, algorithm):
+        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + ".csv"
+
+    @staticmethod
+    def getTrainFile(symbol, algorithm):
+        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + ".csv"
+
+    @staticmethod
+    def getModelFile(symbol, algorithm):
+        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + ".h5"
+
     def saveToTrainFile(self, data, symbol, algorithm):
 
         data = json.loads(data)
@@ -43,8 +55,7 @@ class FileWaiter:
     def saveAppendToFile(self, data, symbol, algorithm):
 
         data = self.convertDataToStandard(data)
-        fileName = Constant.TRAIN_FOLDER + "/" + \
-            data["Symbol"] + ".csv"
+        fileName = FileWaiter().getTrainFile(symbol, algorithm)
         # create first row # Date , Open , High , Low , Close , Volume if not exists
         if not os.path.exists(fileName):
             with open(fileName, 'w') as f:
@@ -56,9 +67,40 @@ class FileWaiter:
             f.write(data["Date"] + "," + str(data["Open"]) + "," + str(data["High"]) + "," +
                     str(data["Low"]) + "," + str(data["Close"]) + "," + str(data["Volume"]) + "\n")
 
-        print("Saved to file: " + fileName + "successfully")
+        print("Saved to file: " + fileName + " successfully")
 
-    def saveToTxtFile(self, data, symbol, algorithm):
+    def saveToFile(self, datas, symbol, algorithm):
+        # data = self.convertDataToStandard(data)
+        fileName = FileWaiter().getTrainFile(symbol, algorithm)
+        # create first row # Date , Open , High , Low , Close , Volume if not exists
+        with open(fileName, 'w') as f:
+            f.write("Date,Open,High,Low,Close,Volume\n")
+        #
+        #   [
+        #     1499040000000,      // Open time
+        #     "0.01634790",       // Open
+        #     "0.80000000",       // High
+        #     "0.01575800",       // Low
+        #     "0.01577100",       // Close
+        #     "148976.11427815",  // Volume
+        #     1499644799999,      // Close time
+        #     "2434.19055334",    // Quote asset volume
+        #     308,                // Number of trades
+        #     "1756.87402397",    // Taker buy base asset volume
+        #     "28.46694368",      // Taker buy quote asset volume
+        #     "17928899.62484339" // Ignore.
+        #   ]
+        # ]
+        # loop to datas
+        for data in datas:
+            # convert Date from millisecond to Date in format "HH:MM:SS"
+            data[0] = self.convertMillisecondToDate(data[0])
+            with open(fileName, "a") as f:
+                f.write(data[0] + "," + str(data[1]) + "," + str(data[2]) + "," +
+                        str(data[3]) + "," + str(data[4]) + "," + str(data[5]) + "\n")
+        print("Saved to file: " + fileName + " ssuccessfully")
+
+    def saveToTxtFile(self, datas, symbol, algorithm):
         file = Constant.TRAIN_FOLDER + "/" + symbol + ".txt"
         data = self.convertDataToStandard(data)
         with open(file, "w") as f:

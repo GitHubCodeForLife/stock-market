@@ -8,6 +8,7 @@ from predictor.NSEpredictor import NSEpredictor
 from modeltrainer.LSTMTrainer import LSTMTrainer
 from jobs.WebSocketJob import WebSocketJob
 from helper.log.LogService import LogService
+from jobs.TrainSchedule import TrainSchedule
 
 app = dash.Dash()
 server = app.server
@@ -16,26 +17,41 @@ server = app.server
 df = pd.read_csv("./static/data/stock_data.csv")
 
 
+criterias = {
+    "symbol": "xmrbtc",
+    "algorithm": "LSTM",
+    "features": "Close"
+}
+
+
 # ================================ PREDICTOR ==================================
-nseTrainer = NSEpredictor()
-train, valid, dataset = nseTrainer.run()
 # lsmtTrainer = LSTMTrainer()
 # lsmtTrainer.run()
 
+nseTrainer = NSEpredictor()
+train, valid, dataset = nseTrainer.run()
+
 # ================================ WEBSOCKET ==================================
-websocketJob = WebSocketJob()
-
-
-def callback(result):
-    global valid, train, dataset
-    valid = result["valid"]
-    train = result["train"]
-    dataset = result["dataset"]
-
-
-websocketJob.addListener(callback)
+websocketJob = WebSocketJob(criterias)
 websocketJob.start()
 
+# ================================ TRAIN AND PREDICTOR JOB ==================================
+trainSchedule = TrainSchedule(criterias)
+
+
+def listener(result):
+    global valid, train, dataset
+    valid = result['valid']
+    train = result['train']
+    dataset = result['dataset']
+    LogService().logAppendToFile("listener")
+    LogService().logAppendToFile(str(valid))
+    LogService().logAppendToFile(str(train))
+    LogService().logAppendToFile(str(dataset))
+
+
+trainSchedule.addListener(listener)
+trainSchedule.start()
 
 # ================================ UI AND EVENTS==================================
 app.layout = html.Div([
@@ -93,14 +109,14 @@ app.layout = html.Div([
               [Input('my-dropdown', 'value')])
 def update_figure(selected_dropdown_value):
     print(selected_dropdown_value)
-    global websocketJob
-    websocketJob.setSymbol(selected_dropdown_value[0])
+    global websocketJob, criterias
+    criterias["symbol"] = "btcusdt"
+    websocketJob.runAgain(criterias)
 
 
 @ app.callback(Output('live-update-text', 'children'),
                Input('interval-component', 'n_intervals'))
 def update_metrics(n):
-    LogService().logAppendToFile("update_metrics")
 
     return [dcc.Graph(
         id="Predicted Data",

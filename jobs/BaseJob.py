@@ -10,9 +10,9 @@ class BaseJob(threading.Thread):
     def run(self):
         return None
 
+    def addListener(self, listener):
+        self._listeners.append(listener)
+
     def emit(self, product):
         for callback in self._listeners:
             callback(product)
-
-    def addListener(self, listener):
-        self._listeners.append(listener)

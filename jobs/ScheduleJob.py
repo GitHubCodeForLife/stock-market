@@ -3,7 +3,7 @@ import schedule
 import time
 
 
-class BaseJob(threading.Thread):
+class ScheduleJob(threading.Thread):
     _listeners = []
     _time = 10
 
@@ -21,16 +21,20 @@ class BaseJob(threading.Thread):
             time.sleep(1)
 
     def job(self):
+        print("BaseJob job")
         product = self.doJob()
-        for callback in self._listeners:
-            callback(product)
+        self.emit(product)
 
     def doJob(self):
         print("BaseJob doJob")
         return None
 
+    def setTime(self, time):
+        self._time = time
+
     def addListener(self, listener):
         self._listeners.append(listener)
 
-    def setTime(self, time):
-        self._time = time
+    def emit(self, product):
+        for callback in self._listeners:
+            callback(product)
