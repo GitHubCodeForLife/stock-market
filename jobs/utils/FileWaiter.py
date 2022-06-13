@@ -143,6 +143,6 @@ class FileWaiter:
         result["Symbol"] = data["k"]["s"]
         return result
 
-    # convert Date from millisecond to Date in format "HH:MM:SS"
+    # convert Date from millisecond to Date in format "HH:MM:SS:MMM"
     def convertMillisecondToDate(self, millisecond):
-        return str(datetime.fromtimestamp(millisecond/1000))
+        return datetime.fromtimestamp(millisecond / 1000).strftime('%Y-%m-%d %H:%M:%S')

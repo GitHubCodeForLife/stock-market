@@ -5,22 +5,21 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 import pandas as pd
 from predictor.NSEpredictor import NSEpredictor
-from modeltrainer.LSTMTrainer import LSTMTrainer
 from jobs.WebSocketJob import WebSocketJob
 from helper.log.LogService import LogService
 from jobs.TrainSchedule import TrainSchedule
+from jobs.sockets.SocketFactory import SocketFactory
 
 app = dash.Dash()
 server = app.server
 
-
 df = pd.read_csv("./static/data/stock_data.csv")
-
 
 criterias = {
     "symbol": "xmrbtc",
     "algorithm": "LSTM",
-    "features": "Close"
+    "features": "Close",
+    "isLoadData": True
 }
 
 
@@ -40,18 +39,27 @@ trainSchedule = TrainSchedule(criterias)
 
 
 def listener(result):
-    global valid, train, dataset
+    global valid, train, dataset, criterias
     valid = result['valid']
     train = result['train']
     dataset = result['dataset']
-    LogService().logAppendToFile("listener")
-    LogService().logAppendToFile(str(valid))
-    LogService().logAppendToFile(str(train))
-    LogService().logAppendToFile(str(dataset))
+    criterias['isLoadData'] = False
 
 
 trainSchedule.addListener(listener)
 trainSchedule.start()
+# ================================INITIALIZATION ==================================
+websocket = SocketFactory.getSocket()
+all_symbols = None
+
+
+def callback(data):
+    global all_symbols
+    all_symbols = data
+    LogService().logAppendToFile(str(all_symbols))
+
+
+websocket.getAllSymbolTickets(callback)
 
 # ================================ UI AND EVENTS==================================
 app.layout = html.Div([
@@ -61,12 +69,9 @@ app.layout = html.Div([
 
         dcc.Tab(label='NSE-TATAGLOBAL Stock Data', children=[
             html.Div([
+                html.Div(id="message"),
                 dcc.Dropdown(id='my-dropdown',
-                             options=[{'label': 'Tesla', 'value': 'TSLA'},
-                                      {'label': 'Apple', 'value': 'AAPL'},
-                                      {'label': 'Facebook', 'value': 'FB'},
-                                      {'label': 'Microsoft', 'value': 'MSFT'}],
-                             multi=True, value=['FB'],
+                             multi=False,
                              style={"display": "block", "margin-left": "auto",
                                     "margin-right": "auto", "width": "60%"}),
                 html.Div([
@@ -105,18 +110,35 @@ app.layout = html.Div([
 ])
 
 
-@app.callback(Output('highlow', 'figure'),
-              [Input('my-dropdown', 'value')])
+@app.callback(Output(component_id='my-dropdown', component_property='options'),
+              Input('my-dropdown', 'value'))
 def update_figure(selected_dropdown_value):
+
+    global criterias
+    # isLoadData = True
+    criterias['isLoadData'] = True
+
     print(selected_dropdown_value)
-    global websocketJob, criterias
-    criterias["symbol"] = "btcusdt"
-    websocketJob.runAgain(criterias)
+    LogService().logAppendToFile(
+        "Selected Dropdown Value: " + str(selected_dropdown_value))
+
+    if selected_dropdown_value is not None:
+        global websocketJob
+        criterias["symbol"] = selected_dropdown_value
+        websocketJob.runAgain(criterias)
+
+    options = []
+    for symbol in all_symbols:
+        options.append({'label': symbol, 'value': symbol})
+
+    return options
 
 
 @ app.callback(Output('live-update-text', 'children'),
                Input('interval-component', 'n_intervals'))
 def update_metrics(n):
+    if criterias['isLoadData'] == True:
+        return "Loading Data..."
 
     return [dcc.Graph(
         id="Predicted Data",
@@ -127,23 +149,26 @@ def update_metrics(n):
                     y=train["Close"],
                     mode='lines',
                     fillcolor='blue',
+                    name='Train Data'
                 ),
                 go.Scatter(
                     x=valid.index,
                     y=valid["Predictions"],
                     mode='lines',
                     fillcolor='red',
+                    name='Predictions'
                 ),
                 go.Scatter(
                     x=dataset.index,
                     y=dataset["Close"],
                     mode='lines',
                     fillcolor='green',
+                    name='Actual Data'
                 )
 
             ],
             "layout":go.Layout(
-                title='scatter plot',
+                title=criterias["symbol"] + " Stock Price Prediction",
                 xaxis={'title': 'Date'},
                 yaxis={'title': 'Closing Rate'},
             )

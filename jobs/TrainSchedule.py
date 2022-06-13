@@ -4,7 +4,7 @@ from modeltrainer.FactoryTrainer import FactoryTrainer
 from predictor.FactoryPredictor import FactoryPredictor
 
 
-time = 1
+time = 3
 
 
 class TrainSchedule(ScheduleJob):
