@@ -1,58 +1,66 @@
-import requests
+import webbrowser
+
+import websockets
 from jobs.BaseJob import BaseJob
 from jobs.utils.FileWaiter import FileWaiter
-from modeltrainer.LSTMTrainer import LSTMTrainer
-from predictor.NSEpredictor import NSEpredictor
-
-
-time = 60/5
+from modeltrainer.FactoryTrainer import FactoryTrainer
+from predictor.FactoryPredictor import FactoryPredictor
+from jobs.sockets.SocketFactory import SocketFactory
+import threading
 
 fileWaiter = FileWaiter()
 
 
 class WebSocketJob(BaseJob):
-    socket = None
     symbol = "MSFT"
+    algorithm = "LSTM"
+    feature = "Close"
+
+    websocket = None
+    isChange = True
 
     def __init__(self):
-        super().__init__(time=time)
+        super().__init__()
 
-    def doJob(self):
-        print("WebsocketJob doJob")
+    def run(self):
+        if(self.isChange):
+            websocket = SocketFactory().getSocket()
+            websocket.on_message = self.on_message
+            websocket.on_error = self.on_error
+            websocket.run()
 
-        # data = self.getMockDataFromTxt()
-        data = self.getDataFromBinance()
+        self.websocket = websocket
 
-        fileName, fileTrainModel = fileWaiter.saveToTrainFile(data)
-        print("fileName: " + fileName)
-        print("fileTrainModel: " + fileTrainModel)
-        lstmTrainer = LSTMTrainer()
-        lstmTrainer.run(fileName, fileTrainModel)
+    def on_message(self, ws, data):
+        # print current thread
+        print("Web socket Binnance: " + threading.current_thread().name)
+        print("on_message: " + str(ws))
+        print(str(data))
 
-        predictor = NSEpredictor()
-        predictor.run(fileName, fileTrainModel)
+        fileWaiter.saveAppendToFile(data, self.symbol, self.algorithm)
 
-        valid, train = predictor.valid, predictor.train
-        return {"valid": valid, "train": train}
+        # fileName, fileTrainModel = fileWaiter.saveToTrainFile(
+        #     data, self.symbol, self.algorithm)
+
+        # trainer = FactoryTrainer().getTrainer(self.algorithm, self.feature)
+        # trainer.run(fileName, fileTrainModel)
+
+        # predictor = FactoryPredictor().getPredictor(self.algorithm, self.feature)
+        # train, valid, dataset = predictor.run(fileName, fileTrainModel)
+
+        # self.emit({"valid": valid, "train": train, "dataset": dataset})
+
+        self.emit({"valid": "valid", "train": "train", "dataset": "dataset"})
+
+    def on_error(self, ws, error):
+        print("WebsocketJob on_error")
+        print(str(error))
 
     def setSymbol(self, symbol):
         self.symbol = symbol
 
-    def getDataFromBinance(self):
-        url = "https://alpha-vantage.p.rapidapi.com/query"
-
-        querystring = {"interval": "5min", "function": "TIME_SERIES_INTRADAY",
-                       "symbol": self.symbol, "datatype": "json", "output_size": "compact"}
-
-        headers = {
-            "X-RapidAPI-Key": "1c1a28d3a9mshc137ad75fd3c883p1c559cjsnd8c0303ebb90",
-            "X-RapidAPI-Host": "alpha-vantage.p.rapidapi.com"
-        }
-
-        response = requests.request(
-            "GET", url, headers=headers, params=querystring)
-
-        return response.text
+    def setAlgorithm(self, algorithm):
+        self.algorithm = algorithm
 
     def getMockDataFromTxt(self):
         file = "./static/data/data.txt"

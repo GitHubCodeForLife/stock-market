@@ -1,5 +1,3 @@
-from datetime import datetime
-from turtle import color
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -9,36 +7,37 @@ import pandas as pd
 from predictor.NSEpredictor import NSEpredictor
 from modeltrainer.LSTMTrainer import LSTMTrainer
 from jobs.WebSocketJob import WebSocketJob
+from helper.log.LogService import LogService
+
 app = dash.Dash()
 server = app.server
+
+
+df = pd.read_csv("./static/data/stock_data.csv")
+
+
+# ================================ PREDICTOR ==================================
+nseTrainer = NSEpredictor()
+train, valid, dataset = nseTrainer.run()
 # lsmtTrainer = LSTMTrainer()
 # lsmtTrainer.run()
 
-nseTrainer = NSEpredictor()
-nseTrainer.run()
-train = nseTrainer.train
-valid = nseTrainer.valid
-
-
-test = 0
+# ================================ WEBSOCKET ==================================
 websocketJob = WebSocketJob()
 
 
 def callback(result):
-    # print(result)
-    # result = json.loads(result)
-    global valid, train
-    global websocketJob
+    global valid, train, dataset
     valid = result["valid"]
     train = result["train"]
-    # websocketJob.setSymbol("TSLA")
+    dataset = result["dataset"]
 
 
 websocketJob.addListener(callback)
 websocketJob.start()
 
-df = pd.read_csv("./static/data/stock_data.csv")
 
+# ================================ UI AND EVENTS==================================
 app.layout = html.Div([
     html.H1("Stock Price Analysis Dashboard", style={"textAlign": "center"}),
 
@@ -101,19 +100,12 @@ def update_figure(selected_dropdown_value):
 @ app.callback(Output('live-update-text', 'children'),
                Input('interval-component', 'n_intervals'))
 def update_metrics(n):
-
-  # log to file txt
-    file = "./static/data/data1.txt"
-    with open(file, "w") as f:
-        f.write(str(valid))
-        f.write("\n")
-        f.write(str(train))
+    LogService().logAppendToFile("update_metrics")
 
     return [dcc.Graph(
         id="Predicted Data",
         figure={
             "data": [
-
                 go.Scatter(
                     x=train.index,
                     y=train["Close"],
@@ -126,6 +118,13 @@ def update_metrics(n):
                     mode='lines',
                     fillcolor='red',
                 ),
+                go.Scatter(
+                    x=dataset.index,
+                    y=dataset["Close"],
+                    mode='lines',
+                    fillcolor='green',
+                )
+
             ],
             "layout":go.Layout(
                 title='scatter plot',

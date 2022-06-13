@@ -1,3 +1,4 @@
+from re import T
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import load_model
@@ -37,6 +38,8 @@ class NSEpredictor:
 
         self.train = train
         self.valid = valid
+
+        return train, valid, dataset
 
     def loadData(self, filename):
         return pd.read_csv(filename)
@@ -89,7 +92,6 @@ class NSEpredictor:
 
     def visualize(self, closing_price, new_data):
         ex = int(len(new_data)*0.8 - 1)
-
         train = new_data[:ex]
         valid = new_data[ex:]
         valid['Predictions'] = closing_price
