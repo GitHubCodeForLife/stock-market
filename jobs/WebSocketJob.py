@@ -1,11 +1,8 @@
 from jobs.BaseJob import BaseJob
-from jobs.ScheduleJob import ScheduleJob
 from jobs.utils.FileWaiter import FileWaiter
-from modeltrainer.FactoryTrainer import FactoryTrainer
-from predictor.FactoryPredictor import FactoryPredictor
 from jobs.sockets.SocketFactory import SocketFactory
-import threading
 from helper.log.LogService import LogService
+# import threading
 
 fileWaiter = FileWaiter()
 
@@ -36,24 +33,18 @@ class WebSocketJob(BaseJob):
 
     def on_open(self, ws):
         self.websocket = ws
-        LogService().logAppendToFile("WebSocketJob" + "run")
-        LogService().logAppendToFile(self.websocket)
 
     def on_message(self, ws, data):
-        print("Web socket Binnance: " + threading.current_thread().name)
+        # print("Web socket Binnance: " + threading.current_thread().name)
         fileWaiter.saveAppendToFile(
             data, self.criterias['symbol'], self.criterias['algorithm'])
 
     def on_error(self, ws, error):
         print("WebsocketJob on_error")
         print(str(error))
+        LogService().logAppendToFile("Error: "+str(error))
 
     def runAgain(self, criterias):
         self.criterias = criterias
         self.websocket.close()
         self.run()
-
-    def getMockDataFromTxt(self):
-        file = "./static/data/data.txt"
-        with open(file, "r") as f:
-            return f.read()

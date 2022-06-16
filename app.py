@@ -3,32 +3,31 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-import pandas as pd
-from predictor.NSEpredictor import NSEpredictor
 from jobs.WebSocketJob import WebSocketJob
 from helper.log.LogService import LogService
 from jobs.TrainSchedule import TrainSchedule
 from jobs.sockets.SocketFactory import SocketFactory
 
+
 app = dash.Dash()
 server = app.server
 
-df = pd.read_csv("./static/data/stock_data.csv")
-
 criterias = {
-    "symbol": "xmrbtc",
+    "symbol": "XMRBTC",
     "algorithm": "LSTM",
     "features": "Close",
     "isLoadData": True
 }
+tempSymbol = criterias['symbol']
+train, valid, dataset = None, None, None
 
 
 # ================================ PREDICTOR ==================================
 # lsmtTrainer = LSTMTrainer()
 # lsmtTrainer.run()
 
-nseTrainer = NSEpredictor()
-train, valid, dataset = nseTrainer.run()
+# nseTrainer = NSEpredictor()
+# train, valid, dataset = nseTrainer.run()
 
 # ================================ WEBSOCKET ==================================
 websocketJob = WebSocketJob(criterias)
@@ -43,11 +42,21 @@ def listener(result):
     valid = result['valid']
     train = result['train']
     dataset = result['dataset']
-    criterias['isLoadData'] = False
+
+    # print("listener")
+    # print(tempSymbol)
+    # print(criterias['symbol'])
+
+    if tempSymbol == criterias['symbol']:
+        criterias['isLoadData'] = False
+    else:
+        criterias['symbol'] = tempSymbol
 
 
 trainSchedule.addListener(listener)
 trainSchedule.start()
+
+
 # ================================INITIALIZATION ==================================
 websocket = SocketFactory.getSocket()
 all_symbols = None
@@ -75,7 +84,6 @@ app.layout = html.Div([
                              style={"display": "block", "margin-left": "auto",
                                     "margin-right": "auto", "width": "60%"}),
                 html.Div([
-                    html.H4('TERRA Satellite Live Feed'),
                     html.Div(id='live-update-text'),
                     dcc.Interval(
                         id='interval-component',
@@ -113,19 +121,16 @@ app.layout = html.Div([
 @app.callback(Output(component_id='my-dropdown', component_property='options'),
               Input('my-dropdown', 'value'))
 def update_figure(selected_dropdown_value):
-
     global criterias
-    # isLoadData = True
     criterias['isLoadData'] = True
 
-    print(selected_dropdown_value)
-    LogService().logAppendToFile(
-        "Selected Dropdown Value: " + str(selected_dropdown_value))
-
     if selected_dropdown_value is not None:
-        global websocketJob
-        criterias["symbol"] = selected_dropdown_value
-        websocketJob.runAgain(criterias)
+        global websocketJob, tempSymbol
+        tempSymbol = selected_dropdown_value
+        # deep copy the criterias
+        criterias_copy = criterias.copy()
+        criterias_copy['symbol'] = selected_dropdown_value
+        websocketJob.runAgain(criterias_copy)
 
     options = []
     for symbol in all_symbols:
@@ -138,7 +143,8 @@ def update_figure(selected_dropdown_value):
                Input('interval-component', 'n_intervals'))
 def update_metrics(n):
     if criterias['isLoadData'] == True:
-        return "Loading Data..."
+        return html.Div(
+            [html.Img(src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif?20151024034921")])
 
     return [dcc.Graph(
         id="Predicted Data",

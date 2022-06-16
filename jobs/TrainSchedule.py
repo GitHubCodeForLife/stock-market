@@ -5,10 +5,12 @@ from predictor.FactoryPredictor import FactoryPredictor
 
 
 time = 3
+TRAIN_TIME = 20
 
 
 class TrainSchedule(ScheduleJob):
     criterias = None
+    trainTimes = 0
 
     def __init__(self, criterias):
         super().__init__(time)
@@ -21,10 +23,14 @@ class TrainSchedule(ScheduleJob):
         model_file = FileWaiter().getModelFile(
             self.criterias['symbol'], self.criterias['algorithm'])
 
-        algorithm = self.criterias['algorithm']
-        features = self.criterias['features']
-        trainer = FactoryTrainer().getTrainer(algorithm, features)
-        trainer.run(train_file, model_file)
+        if self.trainTimes == 0:
+            self.trainTimes = TRAIN_TIME
+            algorithm = self.criterias['algorithm']
+            features = self.criterias['features']
+            trainer = FactoryTrainer().getTrainer(algorithm, features)
+            trainer.run(train_file, model_file)
+
+        self.trainTimes -= 1
 
         predictor = FactoryPredictor().getPredictor(algorithm, features)
         train, valid, dataset = predictor.run(train_file, model_file)
