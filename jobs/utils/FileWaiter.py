@@ -67,7 +67,7 @@ class FileWaiter:
             f.write(data["Date"] + "," + str(data["Open"]) + "," + str(data["High"]) + "," +
                     str(data["Low"]) + "," + str(data["Close"]) + "," + str(data["Volume"]) + "\n")
 
-        print("Saved to file: " + fileName + " successfully")
+        # print("Saved to file: " + fileName + " successfully")
 
     def saveToFile(self, datas, symbol, algorithm):
         # data = self.convertDataToStandard(data)
