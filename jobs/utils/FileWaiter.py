@@ -53,8 +53,7 @@ class FileWaiter:
         return fileName, fileTrainModel
 
     def saveAppendToFile(self, data, symbol, algorithm):
-
-        data = self.convertDataToStandard(data)
+        # data = self.convertDataToStandard(data)
         fileName = FileWaiter().getTrainFile(symbol, algorithm)
         # create first row # Date , Open , High , Low , Close , Volume if not exists
         if not os.path.exists(fileName):
@@ -143,6 +142,5 @@ class FileWaiter:
         result["Symbol"] = data["k"]["s"]
         return result
 
-    # convert Date from millisecond to Date in format "HH:MM:SS:MMM"
     def convertMillisecondToDate(self, millisecond):
         return datetime.fromtimestamp(millisecond / 1000).strftime('%Y-%m-%d %H:%M:%S')

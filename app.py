@@ -3,11 +3,11 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
-from jobs.WebSocketJob import WebSocketJob
-from helper.log.LogService import LogService
-from jobs.TrainSchedule import TrainSchedule
-from jobs.sockets.SocketFactory import SocketFactory
 
+from helper.log.LogService import LogService
+from jobs.sockets.SocketFactory import SocketFactory
+from jobs.TrainSchedule import TrainSchedule
+from jobs.WebSocketJob import WebSocketJob
 
 app = dash.Dash()
 server = app.server
@@ -16,18 +16,12 @@ criterias = {
     "symbol": "XMRBTC",
     "algorithm": "LSTM",
     "features": "Close",
-    "isLoadData": True
+    "isLoadData": True,
+    "isTrain": True,
 }
 tempSymbol = criterias['symbol']
 train, valid, dataset = None, None, None
 
-
-# ================================ PREDICTOR ==================================
-# lsmtTrainer = LSTMTrainer()
-# lsmtTrainer.run()
-
-# nseTrainer = NSEpredictor()
-# train, valid, dataset = nseTrainer.run()
 
 # ================================ WEBSOCKET ==================================
 websocketJob = WebSocketJob(criterias)
@@ -38,15 +32,13 @@ trainSchedule = TrainSchedule(criterias)
 
 
 def listener(result):
+    if result == None:
+        return
     global valid, train, dataset, criterias
     valid = result['valid']
     train = result['train']
     dataset = result['dataset']
-
-    # print("listener")
-    # print(tempSymbol)
-    # print(criterias['symbol'])
-
+    # print(valid)
     if tempSymbol == criterias['symbol']:
         criterias['isLoadData'] = False
     else:
@@ -65,7 +57,7 @@ all_symbols = None
 def callback(data):
     global all_symbols
     all_symbols = data
-    LogService().logAppendToFile(str(all_symbols))
+    # LogService().logAppendToFile(str(all_symbols))
 
 
 websocket.getAllSymbolTickets(callback)
@@ -127,10 +119,8 @@ def update_figure(selected_dropdown_value):
     if selected_dropdown_value is not None:
         global websocketJob, tempSymbol
         tempSymbol = selected_dropdown_value
-        # deep copy the criterias
-        criterias_copy = criterias.copy()
-        criterias_copy['symbol'] = selected_dropdown_value
-        websocketJob.runAgain(criterias_copy)
+        criterias['symbol'] = selected_dropdown_value
+        websocketJob.runAgain(criterias)
 
     options = []
     for symbol in all_symbols:
@@ -151,21 +141,14 @@ def update_metrics(n):
         figure={
             "data": [
                 go.Scatter(
-                    x=train.index,
-                    y=train["Close"],
-                    mode='lines',
-                    fillcolor='blue',
-                    name='Train Data'
-                ),
-                go.Scatter(
-                    x=valid.index,
-                    y=valid["Predictions"],
+                    x=valid['Date'],
+                    y=valid["Close"],
                     mode='lines',
                     fillcolor='red',
                     name='Predictions'
                 ),
                 go.Scatter(
-                    x=dataset.index,
+                    x=dataset['Date'],
                     y=dataset["Close"],
                     mode='lines',
                     fillcolor='green',
