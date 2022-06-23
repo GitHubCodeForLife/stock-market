@@ -1,8 +1,35 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
+algorithm_options = [
+    {"label": "LSTM", "value": "LSTM"},
+    {"label": "RNN", "value": "RNN"},
+    {"label": "XGboost", "value": "XGboost"},
+    {"label": "Transformer and Time Embeddings",
+        "value": "Transformer and Time Embeddings"},
+]
 
-def Dash_Graph_Option(mck_options, algorithm_options, feature_options):
+feature_options = [
+    {"label": "Close", "value": "Close"},
+    {"label": "Price Of Change ", "value": "Price Of Change "},
+    {"label": "RSI", "value": "RSI"},
+    {"label": " Bolling Bands", "value": " Bolling Bands"},
+    {"label": "Moving Average", "value": "Moving Average"},
+    {"label": "Đường hỗ trợ/kháng cự (nâng cao)",
+     "value": "Đường hỗ trợ/kháng cự(nâng cao)"},
+]
+
+
+def createMCKOptions(allSymbols):
+    mck_options = []
+    for symbol in allSymbols:
+        mck_options.append({"label": symbol, "value": symbol})
+    return mck_options
+
+
+def Dash_Graph_Option(all_symbols):
+    mck_options = createMCKOptions(all_symbols)
+
     return dbc.Row(
         [
             dbc.Col(
@@ -39,6 +66,7 @@ def Dash_Graph_Option(mck_options, algorithm_options, feature_options):
                 sm=12,
                 md=3,
             ),
+            html.Div(id='indicator')
 
         ]
     )

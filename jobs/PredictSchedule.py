@@ -7,7 +7,7 @@ import threading
 time = 3
 
 
-class TrainSchedule(ScheduleJob):
+class PredictSchedule(ScheduleJob):
     criterias = None
     trainTimes = 0
 
@@ -16,8 +16,8 @@ class TrainSchedule(ScheduleJob):
         self.criterias = criterias
 
     def doJob(self):
-        # print(+ )        print(self.criterias['isTrain'])
         if self.criterias['isTrain'] == False:
+            criterias_copy = self.criterias.copy()
             train_file = FileWaiter().getTrainFile(
                 self.criterias['symbol'], self.criterias['algorithm'])
             model_file = FileWaiter().getModelFile(
@@ -27,8 +27,13 @@ class TrainSchedule(ScheduleJob):
                 self.criterias['algorithm'])
             train, valid, dataset = algorithm.run_predict(
                 train_file, model_file)
-            return {'valid': valid, 'train': train, 'dataset': dataset}
+            return {'valid': valid, 'train': train, 'dataset': dataset,
+                    'criterias': criterias_copy}
         return None
 
     def setCriterias(self, criterias):
         self.criterias = criterias
+        # self.restart()
+
+    # def restart(self):
+    #     self.run()

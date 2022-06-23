@@ -24,6 +24,7 @@ class WebSocketJob(BaseJob):
         self.criterias = criterias
 
     def run(self):
+        criterias_copy = self.criterias.copy()
         print("WebSocketJob doJob")
         websocket = SocketFactory().getSocket()
         # get 1000 rows until now and insert to the file
@@ -31,13 +32,14 @@ class WebSocketJob(BaseJob):
         fileWaiter.saveToFile(
             datas, self.criterias['symbol'], self.criterias['algorithm'])
         self.trainModel()
+        product = {'criterias': criterias_copy}
+        self.emit(product=product)
         # use socket to insert realtime data to the file
         websocket.on_message = self.on_message
         websocket.on_error = self.on_error
         websocket.on_open = self.on_open
         websocket.cc = self.criterias['symbol']
         websocket.run()
-        return None
 
     def on_open(self, ws):
         self.websocket = ws
@@ -51,7 +53,6 @@ class WebSocketJob(BaseJob):
         date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
         if self.current_time.minute != date.minute:
             if self.steps == 0:
-                self.criterias['isTrain'] = True
                 self.steps = self.STEPS_CONST
                 self.trainModel()
             self.steps = self.steps - 1
@@ -66,14 +67,14 @@ class WebSocketJob(BaseJob):
 
     def runAgain(self, criterias):
         self.criterias = criterias
-        criterias['isTrain'] = True
         self.websocket.close()
+        self.restart()
+
+    def restart(self):
         self.run()
-        # self.trainModel()
 
     def trainModel(self):
         print("WebSocketJob trainModel")
-        # sleep 1 minute
         train_file = FileWaiter().getTrainFile(
             self.criterias['symbol'], self.criterias['algorithm'])
         model_file = FileWaiter().getModelFile(
@@ -81,5 +82,6 @@ class WebSocketJob(BaseJob):
         algorithm = AlgorithmFactory().getAlgorithm(
             self.criterias['algorithm'])
         algorithm.run_train(train_file, model_file)
-        self.criterias['isTrain'] = False
-        print("WebSocketJob trainModel done")
+        LogService().logAppendToFile(
+            "Train model for " + self.criterias['symbol'] + " " + self.criterias['algorithm'])
+        print("WebSocketJob trainModel done: " + model_file)
