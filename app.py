@@ -1,166 +1,78 @@
 import dash
+import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-import plotly.graph_objs as go
-from dash.dependencies import Input, Output
 
 from helper.log.LogService import LogService
 from jobs.sockets.SocketFactory import SocketFactory
 from jobs.TrainSchedule import TrainSchedule
 from jobs.WebSocketJob import WebSocketJob
+from views.components.graph import Dash_Graph
+from views.components.header import Dash_Header
 
-app = dash.Dash()
+# import plotly.graph_objs as go
+# from dash.dependencies import Input, Output
+
+
+app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=[
+                dbc.themes.BOOTSTRAP])
 server = app.server
 
-criterias = {
-    "symbol": "XMRBTC",
-    "algorithm": "LSTM",
-    "features": "Close",
-    "isLoadData": True,
-    "isTrain": True,
-}
-tempSymbol = criterias['symbol']
-train, valid, dataset = None, None, None
+# criterias = {
+#     "symbol": "XMRBTC",
+#     "algorithm": "LSTM",
+#     "features": "Close",
+#     "isLoadData": True,
+#     "isTrain": True,
+# }
+# tempSymbol = criterias['symbol']
+# train, valid, dataset = None, None, None
 
 
-# ================================ WEBSOCKET ==================================
-websocketJob = WebSocketJob(criterias)
-websocketJob.start()
+# # ================================ WEBSOCKET ==================================
+# websocketJob = WebSocketJob(criterias)
+# websocketJob.start()
 
-# ================================ TRAIN AND PREDICTOR JOB ==================================
-trainSchedule = TrainSchedule(criterias)
-
-
-def listener(result):
-    if result == None:
-        return
-    global valid, train, dataset, criterias
-    valid = result['valid']
-    train = result['train']
-    dataset = result['dataset']
-    # print(valid)
-    if tempSymbol == criterias['symbol']:
-        criterias['isLoadData'] = False
-    else:
-        criterias['symbol'] = tempSymbol
+# # ================================ TRAIN AND PREDICTOR JOB ==================================
+# trainSchedule = TrainSchedule(criterias)
 
 
-trainSchedule.addListener(listener)
-trainSchedule.start()
+# def listener(result):
+
+#     # print(+ )
+#     if result == None:
+#         return
+#     global valid, train, dataset, criterias
+#     valid = result['valid']
+#     train = result['train']
+#     dataset = result['dataset']
+#     # print(valid)
+#     if tempSymbol == criterias['symbol']:
+#         criterias['isLoadData'] = False
+#     else:
+#         criterias['symbol'] = tempSymbol
 
 
-# ================================INITIALIZATION ==================================
-websocket = SocketFactory.getSocket()
-all_symbols = None
+# trainSchedule.addListener(listener)
+# trainSchedule.start()
 
 
-def callback(data):
-    global all_symbols
-    all_symbols = data
-    # LogService().logAppendToFile(str(all_symbols))
+# # ================================INITIALIZATION ==================================
+# websocket = SocketFactory.getSocket()
+# all_symbols = None
 
 
-websocket.getAllSymbolTickets(callback)
+# def callback(data):
+#     global all_symbols
+#     all_symbols = data
+#     # LogService().logAppendToFile(str(all_symbols))
+
+
+# websocket.getAllSymbolTickets(callback)
 
 # ================================ UI AND EVENTS==================================
 app.layout = html.Div([
-    html.H1("Stock Price Analysis Dashboard", style={"textAlign": "center"}),
-
-    dcc.Tabs(id="tabs", children=[
-
-        dcc.Tab(label='NSE-TATAGLOBAL Stock Data', children=[
-            html.Div([
-                html.Div(id="message"),
-                dcc.Dropdown(id='my-dropdown',
-                             multi=False,
-                             style={"display": "block", "margin-left": "auto",
-                                    "margin-right": "auto", "width": "60%"}),
-                html.Div([
-                    html.Div(id='live-update-text'),
-                    dcc.Interval(
-                        id='interval-component',
-                        interval=1*1000,  # in milliseconds
-                        n_intervals=0
-                    )
-                ])
-            ])
-        ]),
-        dcc.Tab(label='Facebook Stock Data', children=[
-            html.Div([
-                html.H1("Facebook Stocks High vs Lows",
-                        style={'textAlign': 'center'}),
-
-
-                dcc.Graph(id='highlow'),
-                html.H1("Facebook Market Volume",
-                        style={'textAlign': 'center'}),
-
-                dcc.Dropdown(id='my-dropdown2',
-                             options=[{'label': 'Tesla', 'value': 'TSLA'},
-                                      {'label': 'Apple', 'value': 'AAPL'},
-                                      {'label': 'Facebook', 'value': 'FB'},
-                                      {'label': 'Microsoft', 'value': 'MSFT'}],
-                             multi=True, value=['FB'],
-                             style={"display": "block", "margin-left": "auto",
-                                    "margin-right": "auto", "width": "60%"}),
-                dcc.Graph(id='volume')
-            ], className="container"),
-        ])
-    ])
+    Dash_Header,
+    Dash_Graph()
 ])
-
-
-@app.callback(Output(component_id='my-dropdown', component_property='options'),
-              Input('my-dropdown', 'value'))
-def update_figure(selected_dropdown_value):
-    global criterias
-    criterias['isLoadData'] = True
-
-    if selected_dropdown_value is not None:
-        global websocketJob, tempSymbol
-        tempSymbol = selected_dropdown_value
-        criterias['symbol'] = selected_dropdown_value
-        websocketJob.runAgain(criterias)
-
-    options = []
-    for symbol in all_symbols:
-        options.append({'label': symbol, 'value': symbol})
-
-    return options
-
-
-@ app.callback(Output('live-update-text', 'children'),
-               Input('interval-component', 'n_intervals'))
-def update_metrics(n):
-    if criterias['isLoadData'] == True:
-        return html.Div(
-            [html.Img(src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif?20151024034921")])
-
-    return [dcc.Graph(
-        id="Predicted Data",
-        figure={
-            "data": [
-                go.Scatter(
-                    x=valid['Date'],
-                    y=valid["Close"],
-                    mode='lines',
-                    fillcolor='red',
-                    name='Predictions'
-                ),
-                go.Scatter(
-                    x=dataset['Date'],
-                    y=dataset["Close"],
-                    mode='lines',
-                    fillcolor='green',
-                    name='Actual Data'
-                )
-
-            ],
-            "layout":go.Layout(
-                title=criterias["symbol"] + " Stock Price Prediction",
-                xaxis={'title': 'Date'},
-                yaxis={'title': 'Closing Rate'},
-            )
-        }
-    ),
-    ]

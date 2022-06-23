@@ -2,6 +2,8 @@ import threading
 import schedule
 import time
 
+from helper.log.LogService import LogService
+
 
 class ScheduleJob(threading.Thread):
     _listeners = []
@@ -36,5 +38,6 @@ class ScheduleJob(threading.Thread):
         self._listeners.append(listener)
 
     def emit(self, product):
+
         for callback in self._listeners:
             callback(product)

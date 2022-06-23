@@ -1,4 +1,5 @@
 import threading
+from helper.log.LogService import LogService
 
 
 class BaseJob(threading.Thread):
