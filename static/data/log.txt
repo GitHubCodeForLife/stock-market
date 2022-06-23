@@ -1,0 +1,7 @@
+2022-06-22 16:40:05.429615:  main thread: <_MainThread(MainThread, started 17068)>
+2022-06-22 16:40:08.879007:  train schedule : <TrainSchedule(Thread-2, started 10336)>
+2022-06-22 16:40:08.879920:  emit schedule : <TrainSchedule(Thread-2, started 10336)>
+2022-06-22 16:40:08.880911:  main thread: <TrainSchedule(Thread-2, started 10336)>
+2022-06-22 16:40:11.896926:  train schedule : <TrainSchedule(Thread-2, started 10336)>
+2022-06-22 16:40:11.898160:  emit schedule : <TrainSchedule(Thread-2, started 10336)>
+2022-06-22 16:40:11.898160:  main thread: <TrainSchedule(Thread-2, started 10336)>

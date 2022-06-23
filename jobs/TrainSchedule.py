@@ -1,10 +1,10 @@
 from algorithms.AlogorithmFactory import AlgorithmFactory
+from helper.log.LogService import LogService
 
 from jobs.ScheduleJob import ScheduleJob
 from jobs.utils.FileWaiter import FileWaiter
-
+import threading
 time = 3
-TRAIN_TIME = 20
 
 
 class TrainSchedule(ScheduleJob):
@@ -16,7 +16,7 @@ class TrainSchedule(ScheduleJob):
         self.criterias = criterias
 
     def doJob(self):
-        print(self.criterias['isTrain'])
+        # print(+ )        print(self.criterias['isTrain'])
         if self.criterias['isTrain'] == False:
             train_file = FileWaiter().getTrainFile(
                 self.criterias['symbol'], self.criterias['algorithm'])
