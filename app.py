@@ -72,4 +72,7 @@ server = app.server
 # websocket.getAllSymbolTickets(callback)
 
 # ================================ UI AND EVENTS==================================
-app.layout = html.Div([Dash_Header, Dash_Graph])
+app.layout = html.Div([
+    Dash_Header,
+    Dash_Graph()
+])
