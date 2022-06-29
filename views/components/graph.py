@@ -1,3 +1,4 @@
+from typing import final
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
@@ -5,13 +6,13 @@ import plotly.graph_objs as go
 from dash import dcc, html
 from views.components.graphs.bigGraph import Dash_Big_Graph
 from views.components.graphs.miniGraph import Dash_Mini_Graph
-from views.components.graphs.option import Dash_Graph_Option
 
 
 def Dash_Graph(dataset, prediction):
+    final = 10
 
-    fig = createBigGraph(dataset, prediction)
-    mini_fig = createMiniGraph(dataset, prediction)
+    fig = createBigFigure(dataset, prediction)
+    mini_fig = createMiniFigure(dataset.tail(final), prediction.head(final))
     return html.Div([
         html.Br(),
         dbc.Row(
@@ -26,7 +27,7 @@ def Dash_Graph(dataset, prediction):
     )
 
 
-def createBigGraph(dataset, prediction):
+def createBigFigure(dataset, prediction):
     figure = {
         "data": [
             go.Scatter(
@@ -54,6 +55,29 @@ def createBigGraph(dataset, prediction):
     return figure
 
 
-def createMiniGraph(dataset, prediction):
-    final = 10
-    return createBigGraph(dataset.tail(final), prediction.head(final))
+def createMiniFigure(dataset, prediction):
+    figure = {
+        "data": [
+            go.Scatter(
+                x=prediction['Date'],
+                y=prediction["Close"],
+                mode='markers',
+                fillcolor='red',
+                name='Predictions',
+            ),
+            go.Scatter(
+                x=dataset['Date'],
+                y=dataset["Close"],
+                mode='lines',
+                fillcolor='green',
+                name='Actual Data',
+            )
+        ],
+        "layout": go.Layout(
+            title=" Stock Price Prediction",
+            xaxis={'title': 'Date'},
+            yaxis={'title': 'Closing Rate'},
+
+        )
+    }
+    return figure

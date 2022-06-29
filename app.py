@@ -9,7 +9,7 @@ from jobs.sockets.SocketFactory import SocketFactory
 from jobs.PredictSchedule import PredictSchedule
 from jobs.WebSocketJob import WebSocketJob
 from views.components.graph import Dash_Graph
-from views.components.graphs.option import Dash_Graph_Option, createMCKOptions
+from views.components.option import Dash_Graph_Option, createMCKOptions
 from views.components.header import Dash_Header
 
 app = dash.Dash(__name__)
@@ -18,51 +18,30 @@ app = dash.Dash(__name__, external_stylesheets=[
 server = app.server
 
 criterias = {
-    "symbol": "XMRBTC",
+    "symbol": "XMRBTC",  # sometimes i call it as mck
     "algorithm": "LSTM",
     "features": "Close",
     "isPredict": True,
     "isTrain": True,
 }
-train, valid, dataset = None, None, None
-
+prediction, dataset = None, None
 
 # # ================================ WEBSOCKET ==================================
 websocketJob = WebSocketJob(criterias)
 
 
 def socket_listener(result):
-    # print("socket_listener")
-    # print(result)
     tempCriterias = result['criterias']
     if Equals(criterias, tempCriterias):
         criterias['isTrain'] = False
+    else:
+        websocketJob.runAgain(criterias)
 
 
 websocketJob.addListener(socket_listener)
 websocketJob.start()
 
-# ================================ PREDICTOR JOB ==================================
-predictSchedule = PredictSchedule(criterias)
-
-
-def listener(result):
-    if result == None:
-        return
-    global valid, train, dataset, criterias
-    tempCriterias = result['criterias']
-    if Equals(criterias, tempCriterias) == True:
-        criterias['isPredict'] = False
-
-    valid = result['valid']
-    train = result['train']
-    dataset = result['dataset']
-
-
-predictSchedule.addListener(listener)
-predictSchedule.start()
-
-# ================================== Helper ==================================
+# ================================== Helper Functions ==================================
 
 
 def Equals(criterias, tempCriterias):
@@ -74,6 +53,26 @@ def Equals(criterias, tempCriterias):
         return False
     else:
         return True
+
+
+# ================================ PREDICTOR JOB ==================================
+predictSchedule = PredictSchedule(criterias)
+
+
+def listener(result):
+    if result == None:
+        return
+    global prediction, dataset, criterias
+    tempCriterias = result['criterias']
+    if Equals(criterias, tempCriterias) == True:
+        criterias['isPredict'] = False
+
+    prediction = result['prediction']
+    dataset = result['dataset']
+
+
+predictSchedule.addListener(listener)
+predictSchedule.start()
 
 
 # # ================================INITIALIZATION ==================================
@@ -112,20 +111,23 @@ def update_metrics(n):
     if criterias['isPredict'] == True | criterias['isTrain'] == True:
         return html.Div(
             [html.Img(src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif?20151024034921")])
-    return Dash_Graph(dataset, valid)
+    return Dash_Graph(dataset, prediction)
 
 
 # Change algorithm &  MCK & feature
 @app.callback(
-    Output("indicator", "value"),
+    Output("mck_dropdown", "value"),
+    Output("algorithm_dropdown", "value"),
+    Output("feature_dropdown", "value"),
     Input('mck_dropdown', 'value'),
     Input('algorithm_dropdown', 'value'),
     Input('feature_dropdown', 'value'))
 def update_option(mck, algorithm, features):
-    print(mck, algorithm, features)
+    # print(mck, algorithm, features)
     global criterias, websocketJob, predictSchedule
     if criterias['isTrain'] == True:
-        return ""
+        return criterias['symbol'], criterias['algorithm'], criterias['features']
+   
 
     criterias['symbol'] = mck
     criterias['algorithm'] = algorithm
@@ -137,7 +139,7 @@ def update_option(mck, algorithm, features):
 
     websocketJob.runAgain(criterias)
     predictSchedule.setCriterias(criterias)
-    return ""
+    return mck, algorithm, features
 
 
 # Update mck options

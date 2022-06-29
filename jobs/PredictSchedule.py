@@ -19,21 +19,18 @@ class PredictSchedule(ScheduleJob):
         if self.criterias['isTrain'] == False:
             criterias_copy = self.criterias.copy()
             train_file = FileWaiter().getTrainFile(
-                self.criterias['symbol'], self.criterias['algorithm'])
+                self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
             model_file = FileWaiter().getModelFile(
-                self.criterias['symbol'], self.criterias['algorithm'])
+                self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
 
             algorithm = AlgorithmFactory().getAlgorithm(
                 self.criterias['algorithm'])
-            train, valid, dataset = algorithm.run_predict(
+            prediction, dataset = algorithm.run_predict(
                 train_file, model_file)
-            return {'valid': valid, 'train': train, 'dataset': dataset,
+            return {'dataset': dataset,
+                    'prediction': prediction,
                     'criterias': criterias_copy}
         return None
 
     def setCriterias(self, criterias):
         self.criterias = criterias
-        # self.restart()
-
-    # def restart(self):
-    #     self.run()
