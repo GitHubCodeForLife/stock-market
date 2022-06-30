@@ -1,6 +1,9 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
+from views.components.countTime import Dash_CountTime
+
+
 algorithm_options = [
     {"label": "LSTM", "value": "LSTM"},
     {"label": "RNN", "value": "RNN"},
@@ -66,6 +69,8 @@ def Dash_Graph_Option(all_symbols):
                 sm=12,
                 md=3,
             ),
-
+            dbc.Col(
+                Dash_CountTime()
+            ),
         ]
     )

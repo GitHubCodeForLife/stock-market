@@ -11,10 +11,12 @@ from jobs.WebSocketJob import WebSocketJob
 from views.components.graph import Dash_Graph
 from views.components.option import Dash_Graph_Option, createMCKOptions
 from views.components.header import Dash_Header
+from views.callbacks.demo import Demo
 
 app = dash.Dash(__name__)
 app = dash.Dash(__name__, external_stylesheets=[
                 dbc.themes.BOOTSTRAP])
+
 server = app.server
 
 criterias = {
@@ -127,7 +129,6 @@ def update_option(mck, algorithm, features):
     global criterias, websocketJob, predictSchedule
     if criterias['isTrain'] == True:
         return criterias['symbol'], criterias['algorithm'], criterias['features']
-   
 
     criterias['symbol'] = mck
     criterias['algorithm'] = algorithm
@@ -148,3 +149,6 @@ def update_option(mck, algorithm, features):
     Input('mck_dropdown', 'value'),)
 def update_mck_option(mck):
     return createMCKOptions(all_symbols)
+
+
+demo = Demo(app)
