@@ -3,8 +3,8 @@ from helper.log.LogService import LogService
 
 from jobs.ScheduleJob import ScheduleJob
 from jobs.utils.FileWaiter import FileWaiter
-import threading
-time = 3
+import pandas as pd
+time = 30
 
 
 class PredictSchedule(ScheduleJob):

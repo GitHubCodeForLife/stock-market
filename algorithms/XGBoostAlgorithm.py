@@ -33,8 +33,8 @@ class XGBoostAlgorithm:
         valid_df = dataset[le:]
 
         predictions = None
-        # current = datetime.datetime.now()
-        current = datetime.datetime.fromisoformat(dataset["Date"].iloc[-1])
+        current = datetime.datetime.fromisoformat(
+            dataset["Date"].iloc[-1]) + datetime.timedelta(minutes=1)
 
         for i in range(steps):
             prediction = self.xgboost_predict_and_forcast(train_df, valid_df)

@@ -12,6 +12,7 @@ from views.components.graph import Dash_Graph
 from views.components.option import Dash_Graph_Option, createMCKOptions
 from views.components.header import Dash_Header
 from views.callbacks.demo import Demo
+import pandas as pd
 
 app = dash.Dash(__name__)
 app = dash.Dash(__name__, external_stylesheets=[
@@ -27,6 +28,7 @@ criterias = {
     "isTrain": True,
 }
 prediction, dataset = None, None
+history = pd.DataFrame()
 
 # # ================================ WEBSOCKET ==================================
 websocketJob = WebSocketJob(criterias)
@@ -62,15 +64,25 @@ predictSchedule = PredictSchedule(criterias)
 
 
 def listener(result):
-    if result == None:
+    # check dictory is empty
+    if result is None:
         return
-    global prediction, dataset, criterias
+    global prediction, dataset, criterias, history
+    # print(criterias)
     tempCriterias = result['criterias']
     if Equals(criterias, tempCriterias) == True:
         criterias['isPredict'] = False
 
     prediction = result['prediction']
     dataset = result['dataset']
+
+    # append first prediction to history
+    last_prediction = prediction.iloc[0]
+    if history is None:
+        history = last_prediction
+    else:
+
+        history = history.append(last_prediction, ignore_index=True)
 
 
 predictSchedule.addListener(listener)
@@ -79,6 +91,7 @@ predictSchedule.start()
 
 # # ================================INITIALIZATION ==================================
 websocket = SocketFactory.getSocket()
+
 all_symbols = None
 
 
@@ -113,7 +126,7 @@ def update_metrics(n):
     if criterias['isPredict'] == True | criterias['isTrain'] == True:
         return html.Div(
             [html.Img(src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif?20151024034921")])
-    return Dash_Graph(dataset, prediction)
+    return Dash_Graph(dataset, prediction, history)
 
 
 # Change algorithm &  MCK & feature
@@ -126,7 +139,7 @@ def update_metrics(n):
     Input('feature_dropdown', 'value'))
 def update_option(mck, algorithm, features):
     # print(mck, algorithm, features)
-    global criterias, websocketJob, predictSchedule
+    global criterias, websocketJob, predictSchedule, history
     if criterias['isTrain'] == True:
         return criterias['symbol'], criterias['algorithm'], criterias['features']
 
@@ -140,6 +153,8 @@ def update_option(mck, algorithm, features):
 
     websocketJob.runAgain(criterias)
     predictSchedule.setCriterias(criterias)
+    # reset history
+    history = pd.DataFrame()
     return mck, algorithm, features
 
 

@@ -109,7 +109,8 @@ class RNNAlgorithm:
         steps = 60
         predictions = None
 
-        current = datetime.datetime.fromisoformat(dataset['Date'].values[-1])
+        current = datetime.datetime.fromisoformat(
+            dataset['Date'].values[-1]) + datetime.timedelta(minutes=1)
         for i in range(steps):
             # print(dataset)
             inputs = dataset['Close'].values[-60:]
