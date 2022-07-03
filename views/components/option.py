@@ -66,7 +66,6 @@ def Dash_Graph_Option(all_symbols):
                 sm=12,
                 md=3,
             ),
-            html.Div(id='indicator')
 
         ]
     )

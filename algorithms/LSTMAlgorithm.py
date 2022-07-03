@@ -16,7 +16,7 @@ class LSTMAlgorithm:
         pass
 
     def run_train(self, trainFile, filename_model):
-        print("Stock Trainee: " + trainFile)
+        print("Stock Trainee LSTM: " + trainFile)
 
         df = self.loadData(trainFile)
         print("Data Loaded successfully")
@@ -31,7 +31,6 @@ class LSTMAlgorithm:
         print("Model Trained successfully")
 
         self.saveModel(lstm_model, filename_model)
-        print("==================Model Saved successfully==============")
 
     def run_predict(self, trainFile, filename_model):
         print("Stock Predictor")
@@ -39,23 +38,19 @@ class LSTMAlgorithm:
         df = self.loadData(trainFile)
         print("Data loaded")
 
-        # dataset = self.cleanData(df)
+        new_dataset = self.cleanData(df.copy())
+        self.normalizeData(new_dataset)
 
         dataset = pd.DataFrame()
         dataset['Date'] = df['Date']
         dataset['Close'] = df['Close']
-        # print("Data cleaned")
-        # print(dataset)
 
         lstm_model = self.loadModel(filename_model)
 
         predictions = self.predictFuture(lstm_model, dataset)
         print("Prediction done")
 
-        self.train = dataset
-        self.valid = predictions
-
-        return self.train, self.valid, dataset
+        return predictions, dataset
 
     def loadData(self, filename):
         return pd.read_csv(filename)
@@ -93,20 +88,6 @@ class LSTMAlgorithm:
             x_train_data, (x_train_data.shape[0], x_train_data.shape[1], 1))
 
         return x_train_data, y_train_data
-
-    def split_sequence(self, sequence, n_steps):
-        X, y = list(), list()
-        for i in range(len(sequence)):
-            # find the end of this pattern
-            end_ix = i + n_steps
-            # check if we are beyond the sequence
-            if end_ix > len(sequence)-1:
-                break
-            # gather input and output parts of the pattern
-            seq_x, seq_y = sequence[i:end_ix], sequence[end_ix]
-            X.append(seq_x)
-            y.append(seq_y)
-        return np.array(X), np.array(y)
 
     def trainedModel(self, x_train_data, y_train_data):
         lstm_model = Sequential()

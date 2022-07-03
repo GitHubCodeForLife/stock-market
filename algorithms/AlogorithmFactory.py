@@ -1,4 +1,5 @@
 from algorithms.LSTMAlgorithm import LSTMAlgorithm
+from algorithms.XGBoostAlgorithm import XGBoostAlgorithm
 
 
 class AlgorithmFactory:
@@ -6,6 +7,9 @@ class AlgorithmFactory:
         pass
 
     def getAlgorithm(self, algorithm_type):
-        # if algorithm_type == "LSTM":
-        #     return LSTMAlgorithm()
+        if algorithm_type == "LSTM":
+            return LSTMAlgorithm()
+        elif algorithm_type == "XGboost":
+            return XGBoostAlgorithm()
+
         return LSTMAlgorithm()

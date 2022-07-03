@@ -10,16 +10,22 @@ class FileWaiter:
         pass
 
     @staticmethod
-    def createFileName(symbol, algorithm):
-        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + ".csv"
+    def isFileExist(fileName):
+        return os.path.exists(fileName)
 
     @staticmethod
-    def getTrainFile(symbol, algorithm):
-        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + ".csv"
+    def getLastModifiedTime(file):
+        time = os.path.getmtime(file)
+        datetime_object = datetime.fromtimestamp(time)
+        return datetime_object
 
     @staticmethod
-    def getModelFile(symbol, algorithm):
-        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + ".h5"
+    def getTrainFile(symbol, algorithm, features):
+        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + "_" + "".join(features) + ".csv"
+
+    @staticmethod
+    def getModelFile(symbol, algorithm, features):
+        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + "_" + "".join(features) + ".h5"
 
     def saveToTrainFile(self, data, symbol, algorithm):
 
@@ -52,10 +58,8 @@ class FileWaiter:
 
         return fileName, fileTrainModel
 
-    def saveAppendToFile(self, data, symbol, algorithm):
-        # data = self.convertDataToStandard(data)
-        fileName = FileWaiter().getTrainFile(symbol, algorithm)
-        # create first row # Date , Open , High , Low , Close , Volume if not exists
+    def saveAppendToFile(self, data, fileName):
+       # create first row # Date , Open , High , Low , Close , Volume if not exists
         if not os.path.exists(fileName):
             with open(fileName, 'w') as f:
                 f.write("Date,Open,High,Low,Close,Volume\n")
@@ -68,9 +72,7 @@ class FileWaiter:
 
         # print("Saved to file: " + fileName + " successfully")
 
-    def saveToFile(self, datas, symbol, algorithm):
-        # data = self.convertDataToStandard(data)
-        fileName = FileWaiter().getTrainFile(symbol, algorithm)
+    def saveToFile(self, datas, fileName):
         # create first row # Date , Open , High , Low , Close , Volume if not exists
         with open(fileName, 'w') as f:
             f.write("Date,Open,High,Low,Close,Volume\n")

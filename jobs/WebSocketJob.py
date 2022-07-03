@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from algorithms.AlogorithmFactory import AlgorithmFactory
 from helper.log.LogService import LogService
@@ -29,11 +29,15 @@ class WebSocketJob(BaseJob):
         websocket = SocketFactory().getSocket()
         # get 1000 rows until now and insert to the file
         datas = websocket.getDataFromAPI(self.criterias['symbol'])
+        train_file = FileWaiter().getTrainFile(
+            self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
+
         fileWaiter.saveToFile(
-            datas, self.criterias['symbol'], self.criterias['algorithm'])
+            datas, train_file)
         self.trainModel()
         product = {'criterias': criterias_copy}
         self.emit(product=product)
+
         # use socket to insert realtime data to the file
         websocket.on_message = self.on_message
         websocket.on_error = self.on_error
@@ -56,8 +60,10 @@ class WebSocketJob(BaseJob):
                 self.steps = self.STEPS_CONST
                 self.trainModel()
             self.steps = self.steps - 1
+            train_file = FileWaiter().getTrainFile(
+                self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
             fileWaiter.saveAppendToFile(
-                data, self.criterias['symbol'], self.criterias['algorithm'])
+                data, train_file)
 
         self.current_time = date
 
@@ -76,12 +82,32 @@ class WebSocketJob(BaseJob):
     def trainModel(self):
         print("WebSocketJob trainModel")
         train_file = FileWaiter().getTrainFile(
-            self.criterias['symbol'], self.criterias['algorithm'])
+            self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
         model_file = FileWaiter().getModelFile(
-            self.criterias['symbol'], self.criterias['algorithm'])
-        algorithm = AlgorithmFactory().getAlgorithm(
-            self.criterias['algorithm'])
-        algorithm.run_train(train_file, model_file)
-        LogService().logAppendToFile(
-            "Train model for " + self.criterias['symbol'] + " " + self.criterias['algorithm'])
-        print("WebSocketJob trainModel done: " + model_file)
+            self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
+
+        # should train model here
+        if (shouldTrain(model_file) == True):
+            algorithm = AlgorithmFactory().getAlgorithm(
+                self.criterias['algorithm'])
+            algorithm.run_train(train_file, model_file)
+            # LogService().logAppendToFile(
+            #     "Train model for " + self.criterias['symbol'] + " " + self.criterias['algorithm'])
+            print("WebSocketJob trainModel done: " + model_file)
+        else:
+            print("WebSocketJob trainModel skip: " + model_file)
+
+
+# if file is not exist, then train model
+# if file is exist, then check the last modified time
+# if last modified time is less than 1 hour, then train model
+def shouldTrain(model_file):
+    if (FileWaiter.isFileExist(model_file) == False):
+        return True
+    else:
+        last_modified_time = FileWaiter.getLastModifiedTime(model_file)
+
+        if (last_modified_time < datetime.now() - timedelta(hours=1)):
+            return True
+        else:
+            return False

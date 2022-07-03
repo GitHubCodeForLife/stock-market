@@ -14,3 +14,4 @@ schedule
 polygon-api-client
 websocket-client
 dash_bootstrap_components
+xgboost
