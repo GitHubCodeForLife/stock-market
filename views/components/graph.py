@@ -12,7 +12,6 @@ from views.components.graphs.miniGraph import Dash_Mini_Graph
 
 def Dash_Graph(dataset, prediction, history):
     final = 10
-
     fig = createBigFigure(dataset, prediction, history)
 
     mini_fig = createMiniFigure(dataset.tail(

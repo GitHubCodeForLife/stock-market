@@ -15,8 +15,7 @@ from views.callbacks.demo import Demo
 import pandas as pd
 
 app = dash.Dash(__name__)
-app = dash.Dash(__name__, external_stylesheets=[
-                dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 server = app.server
 
@@ -40,6 +39,30 @@ def socket_listener(result):
         criterias['isTrain'] = False
     else:
         websocketJob.runAgain(criterias)
+        return
+
+    predictSchedule = PredictSchedule(criterias)
+    predictSchedule.addListener(listener)
+    predictSchedule.start()
+
+
+def listener(result):
+    global prediction, dataset, criterias, history
+    tempCriterias = result['criterias']
+    if Equals(criterias, tempCriterias) == True:
+        criterias['isPredict'] = False
+
+    prediction = result['prediction']
+    dataset = result['dataset']
+
+    last_prediction = prediction.iloc[0]
+
+    if (history.empty == True):
+        history = history.append(last_prediction, ignore_index=True)
+    else:
+        last_history = history.iloc[-1]
+        if (last_history['Date'] != last_prediction.Date):
+            history = history.append(last_prediction, ignore_index=True)
 
 
 websocketJob.addListener(socket_listener)
@@ -57,36 +80,6 @@ def Equals(criterias, tempCriterias):
         return False
     else:
         return True
-
-
-# ================================ PREDICTOR JOB ==================================
-predictSchedule = PredictSchedule(criterias)
-
-
-def listener(result):
-    # check dictory is empty
-    if result is None:
-        return
-    global prediction, dataset, criterias, history
-    # print(criterias)
-    tempCriterias = result['criterias']
-    if Equals(criterias, tempCriterias) == True:
-        criterias['isPredict'] = False
-
-    prediction = result['prediction']
-    dataset = result['dataset']
-
-    # append first prediction to history
-    last_prediction = prediction.iloc[0]
-    if history is None:
-        history = last_prediction
-    else:
-
-        history = history.append(last_prediction, ignore_index=True)
-
-
-predictSchedule.addListener(listener)
-predictSchedule.start()
 
 
 # # ================================INITIALIZATION ==================================
@@ -108,7 +101,7 @@ app.layout = html.Div([
     html.Div([
         html.Div(id='graph-options',
                  children=[
-                     Dash_Graph_Option(all_symbols),
+                     Dash_Graph_Option(all_symbols, criterias),
                  ]),
         html.Div(id='live-update-text'),
         dcc.Interval(
@@ -139,7 +132,7 @@ def update_metrics(n):
     Input('feature_dropdown', 'value'))
 def update_option(mck, algorithm, features):
     # print(mck, algorithm, features)
-    global criterias, websocketJob, predictSchedule, history
+    global criterias, websocketJob, history
     if criterias['isTrain'] == True:
         return criterias['symbol'], criterias['algorithm'], criterias['features']
 
@@ -150,11 +143,9 @@ def update_option(mck, algorithm, features):
     # Flags
     criterias['isPredict'] = True
     criterias['isTrain'] = True
-
-    websocketJob.runAgain(criterias)
-    predictSchedule.setCriterias(criterias)
     # reset history
     history = pd.DataFrame()
+    websocketJob.runAgain(criterias)
     return mck, algorithm, features
 
 
