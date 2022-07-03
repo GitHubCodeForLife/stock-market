@@ -14,7 +14,7 @@ algorithm_options = [
 
 feature_options = [
     {"label": "Close", "value": "Close"},
-    {"label": "Rate Of Change ", "value": "Rate Of Change "},
+    {"label": "Price Rate Of Change ", "value": "PROC"},
     {"label": "RSI", "value": "RSI"},
     {"label": " Bolling Bands", "value": " Bolling Bands"},
     {"label": "Moving Average", "value": "Moving Average"},

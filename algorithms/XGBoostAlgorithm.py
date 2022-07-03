@@ -6,11 +6,27 @@ import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from xgboost import plot_importance, plot_tree
 from helper.log.LogService import LogService
+from algorithms.utils.PriceROC import PriceROC
 
 
 class XGBoostAlgorithm:
+    features = ['Close']
+
     def __init__(self):
         pass
+
+    def setFeatures(self, features):
+        self.features = features
+
+    def shouldUsePROC(self):
+        if 'PROC' in self.features:
+            return True
+        return False
+
+    def addPROCColumn(self,  dataset):
+        PROC = PriceROC.caculateROC_list(dataset['Close'].values)
+        dataset['PROC'] = PROC
+        return dataset
 
     def run_train(self, train_file, filename_model):
         print("This model don't support train")

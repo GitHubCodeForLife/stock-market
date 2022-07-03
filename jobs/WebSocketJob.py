@@ -29,8 +29,7 @@ class WebSocketJob(BaseJob):
         websocket = SocketFactory().getSocket()
         # get 1000 rows until now and insert to the file
         datas = websocket.getDataFromAPI(self.criterias['symbol'])
-        train_file = FileWaiter().getTrainFile(
-            self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
+        train_file = FileWaiter().getDataFile(self.criterias['symbol'])
 
         fileWaiter.saveToFile(datas, train_file)
         self.trainModel()
@@ -61,8 +60,7 @@ class WebSocketJob(BaseJob):
                 self.steps = self.STEPS_CONST
                 self.trainModel()
             self.steps = self.steps - 1
-            train_file = FileWaiter().getTrainFile(
-                self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
+            train_file = FileWaiter().getDataFile(self.criterias['symbol'])
             fileWaiter.saveAppendToFile(
                 data, train_file)
             # print("Log on file")
@@ -84,8 +82,7 @@ class WebSocketJob(BaseJob):
 
     def trainModel(self):
         print("WebSocketJob trainModel")
-        train_file = FileWaiter().getTrainFile(
-            self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
+        train_file = FileWaiter().getDataFile(self.criterias['symbol'])
         model_file = FileWaiter().getModelFile(
             self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
 
