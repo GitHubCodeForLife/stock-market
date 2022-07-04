@@ -1,5 +1,6 @@
 from algorithms.LSTMAlgorithm import LSTMAlgorithm
 from algorithms.XGBoostAlgorithm import XGBoostAlgorithm
+from algorithms.RNNAlgorithm import RNNAlgorithm
 
 
 class AlgorithmFactory:
@@ -11,5 +12,7 @@ class AlgorithmFactory:
             return LSTMAlgorithm()
         elif algorithm_type == "XGboost":
             return XGBoostAlgorithm()
+        elif algorithm_type == "RNN":
+            return RNNAlgorithm()
 
         return LSTMAlgorithm()

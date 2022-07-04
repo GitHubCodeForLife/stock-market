@@ -1,10 +1,7 @@
 import datetime
-
-import joblib
 import matplotlib.pyplot as plt
 import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
-import seaborn as sns
 import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from xgboost import plot_importance, plot_tree
@@ -36,8 +33,8 @@ class XGBoostAlgorithm:
         valid_df = dataset[le:]
 
         predictions = None
-        # current = datetime.datetime.now()
-        current = datetime.datetime.fromisoformat(dataset["Date"].iloc[-1])
+        current = datetime.datetime.fromisoformat(
+            dataset["Date"].iloc[-1]) + datetime.timedelta(minutes=1)
 
         for i in range(steps):
             prediction = self.xgboost_predict_and_forcast(train_df, valid_df)

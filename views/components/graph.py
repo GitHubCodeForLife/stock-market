@@ -4,15 +4,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from dash import dcc, html
+from helper.log.LogService import LogService
+
 from views.components.graphs.bigGraph import Dash_Big_Graph
 from views.components.graphs.miniGraph import Dash_Mini_Graph
 
 
-def Dash_Graph(dataset, prediction):
+def Dash_Graph(dataset, prediction, history):
     final = 10
+    fig = createBigFigure(dataset, prediction, history)
 
-    fig = createBigFigure(dataset, prediction)
-    mini_fig = createMiniFigure(dataset.tail(final), prediction.head(final))
+    mini_fig = createMiniFigure(dataset.tail(
+        final), prediction.head(final), history.tail(final))
     return html.Div([
         html.Br(),
         dbc.Row(
@@ -27,7 +30,8 @@ def Dash_Graph(dataset, prediction):
     )
 
 
-def createBigFigure(dataset, prediction):
+def createBigFigure(dataset, prediction, history):
+
     figure = {
         "data": [
             go.Scatter(
@@ -43,6 +47,13 @@ def createBigFigure(dataset, prediction):
                 mode='lines',
                 fillcolor='green',
                 name='Actual Data'
+            ),
+            go.Scatter(
+                x=history['Date'],
+                y=history["Close"],
+                mode='lines',
+                fillcolor='blue',
+                name='History Predict'
             )
 
         ],
@@ -55,7 +66,7 @@ def createBigFigure(dataset, prediction):
     return figure
 
 
-def createMiniFigure(dataset, prediction):
+def createMiniFigure(dataset, prediction, history):
     figure = {
         "data": [
             go.Scatter(
@@ -71,6 +82,13 @@ def createMiniFigure(dataset, prediction):
                 mode='lines',
                 fillcolor='green',
                 name='Actual Data',
+            ),
+            go.Scatter(
+                x=history['Date'],
+                y=history["Close"],
+                mode='lines',
+                fillcolor='blue',
+                name='History Predict',
             )
         ],
         "layout": go.Layout(

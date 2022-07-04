@@ -32,11 +32,12 @@ class WebSocketJob(BaseJob):
         train_file = FileWaiter().getTrainFile(
             self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
 
-        fileWaiter.saveToFile(
-            datas, train_file)
+        fileWaiter.saveToFile(datas, train_file)
         self.trainModel()
-        product = {'criterias': criterias_copy}
-        self.emit(product=product)
+        self.emit({
+            "criterias": criterias_copy,
+            "type": "Init_data"
+        })
 
         # use socket to insert realtime data to the file
         websocket.on_message = self.on_message
@@ -64,7 +65,9 @@ class WebSocketJob(BaseJob):
                 self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
             fileWaiter.saveAppendToFile(
                 data, train_file)
-
+            # print("Log on file")
+            self.emit({"criterias": self.criterias,
+                       "data": data, "type": "Append_data"})
         self.current_time = date
 
     def on_error(self, ws, error):

@@ -11,10 +11,12 @@ from jobs.WebSocketJob import WebSocketJob
 from views.components.graph import Dash_Graph
 from views.components.option import Dash_Graph_Option, createMCKOptions
 from views.components.header import Dash_Header
+from views.callbacks.demo import Demo
+import pandas as pd
 
 app = dash.Dash(__name__)
-app = dash.Dash(__name__, external_stylesheets=[
-                dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
 server = app.server
 
 criterias = {
@@ -25,6 +27,7 @@ criterias = {
     "isTrain": True,
 }
 prediction, dataset = None, None
+history = pd.DataFrame()
 
 # # ================================ WEBSOCKET ==================================
 websocketJob = WebSocketJob(criterias)
@@ -36,6 +39,30 @@ def socket_listener(result):
         criterias['isTrain'] = False
     else:
         websocketJob.runAgain(criterias)
+        return
+
+    predictSchedule = PredictSchedule(criterias)
+    predictSchedule.addListener(listener)
+    predictSchedule.start()
+
+
+def listener(result):
+    global prediction, dataset, criterias, history
+    tempCriterias = result['criterias']
+    if Equals(criterias, tempCriterias) == True:
+        criterias['isPredict'] = False
+
+    prediction = result['prediction']
+    dataset = result['dataset']
+
+    last_prediction = prediction.iloc[0]
+
+    if (history.empty == True):
+        history = history.append(last_prediction, ignore_index=True)
+    else:
+        last_history = history.iloc[-1]
+        if (last_history['Date'] != last_prediction.Date):
+            history = history.append(last_prediction, ignore_index=True)
 
 
 websocketJob.addListener(socket_listener)
@@ -55,28 +82,9 @@ def Equals(criterias, tempCriterias):
         return True
 
 
-# ================================ PREDICTOR JOB ==================================
-predictSchedule = PredictSchedule(criterias)
-
-
-def listener(result):
-    if result == None:
-        return
-    global prediction, dataset, criterias
-    tempCriterias = result['criterias']
-    if Equals(criterias, tempCriterias) == True:
-        criterias['isPredict'] = False
-
-    prediction = result['prediction']
-    dataset = result['dataset']
-
-
-predictSchedule.addListener(listener)
-predictSchedule.start()
-
-
 # # ================================INITIALIZATION ==================================
 websocket = SocketFactory.getSocket()
+
 all_symbols = None
 
 
@@ -93,7 +101,7 @@ app.layout = html.Div([
     html.Div([
         html.Div(id='graph-options',
                  children=[
-                     Dash_Graph_Option(all_symbols),
+                     Dash_Graph_Option(all_symbols, criterias),
                  ]),
         html.Div(id='live-update-text'),
         dcc.Interval(
@@ -111,7 +119,7 @@ def update_metrics(n):
     if criterias['isPredict'] == True | criterias['isTrain'] == True:
         return html.Div(
             [html.Img(src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif?20151024034921")])
-    return Dash_Graph(dataset, prediction)
+    return Dash_Graph(dataset, prediction, history)
 
 
 # Change algorithm &  MCK & feature
@@ -124,10 +132,9 @@ def update_metrics(n):
     Input('feature_dropdown', 'value'))
 def update_option(mck, algorithm, features):
     # print(mck, algorithm, features)
-    global criterias, websocketJob, predictSchedule
+    global criterias, websocketJob, history
     if criterias['isTrain'] == True:
         return criterias['symbol'], criterias['algorithm'], criterias['features']
-   
 
     criterias['symbol'] = mck
     criterias['algorithm'] = algorithm
@@ -136,9 +143,9 @@ def update_option(mck, algorithm, features):
     # Flags
     criterias['isPredict'] = True
     criterias['isTrain'] = True
-
+    # reset history
+    history = pd.DataFrame()
     websocketJob.runAgain(criterias)
-    predictSchedule.setCriterias(criterias)
     return mck, algorithm, features
 
 
@@ -148,3 +155,6 @@ def update_option(mck, algorithm, features):
     Input('mck_dropdown', 'value'),)
 def update_mck_option(mck):
     return createMCKOptions(all_symbols)
+
+
+demo = Demo(app)

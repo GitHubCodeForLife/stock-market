@@ -1,6 +1,9 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
+from views.components.countTime import Dash_CountTime
+
+
 algorithm_options = [
     {"label": "LSTM", "value": "LSTM"},
     {"label": "RNN", "value": "RNN"},
@@ -11,7 +14,7 @@ algorithm_options = [
 
 feature_options = [
     {"label": "Close", "value": "Close"},
-    {"label": "Price Of Change ", "value": "Price Of Change "},
+    {"label": "Rate Of Change ", "value": "Rate Of Change "},
     {"label": "RSI", "value": "RSI"},
     {"label": " Bolling Bands", "value": " Bolling Bands"},
     {"label": "Moving Average", "value": "Moving Average"},
@@ -27,7 +30,7 @@ def createMCKOptions(allSymbols):
     return mck_options
 
 
-def Dash_Graph_Option(all_symbols):
+def Dash_Graph_Option(all_symbols, criterias):
     mck_options = createMCKOptions(all_symbols)
 
     return dbc.Row(
@@ -36,7 +39,7 @@ def Dash_Graph_Option(all_symbols):
                 dcc.Dropdown(
                     id="mck_dropdown",
                     options=mck_options,
-                    value=mck_options[0]["value"],
+                    value=criterias['symbol'],
                     style={"width": "100%"},
                 ),
                 width=3,
@@ -47,7 +50,7 @@ def Dash_Graph_Option(all_symbols):
                 dcc.Dropdown(
                     id="algorithm_dropdown",
                     options=algorithm_options,
-                    value=algorithm_options[0]["value"],
+                    value=criterias['algorithm'],
                     style={"width": "100%"},
                 ),
                 width=3,
@@ -58,7 +61,7 @@ def Dash_Graph_Option(all_symbols):
                 dcc.Dropdown(
                     id="feature_dropdown",
                     options=feature_options,
-                    value=feature_options[0]["value"],
+                    value=criterias['features'],
                     multi=True,
                     style={"width": "100%"},
                 ),
@@ -66,6 +69,8 @@ def Dash_Graph_Option(all_symbols):
                 sm=12,
                 md=3,
             ),
-
+            dbc.Col(
+                Dash_CountTime()
+            ),
         ]
     )

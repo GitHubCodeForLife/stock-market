@@ -1,5 +1,4 @@
 import datetime
-
 import numpy as np
 import pandas as pd
 from helper.log.LogService import LogService
@@ -15,10 +14,10 @@ class LSTMAlgorithm:
     def __init__(self):
         pass
 
-    def run_train(self, trainFile, filename_model):
-        print("Stock Trainee LSTM: " + trainFile)
+    def run_train(self, train_file, filename_model):
+        print("Stock Trainee LSTM: " + train_file)
 
-        df = self.loadData(trainFile)
+        df = self.loadData(train_file)
         print("Data Loaded successfully")
 
         new_dataset = self.cleanData(df)
@@ -32,10 +31,10 @@ class LSTMAlgorithm:
 
         self.saveModel(lstm_model, filename_model)
 
-    def run_predict(self, trainFile, filename_model):
+    def run_predict(self, train_file, filename_model):
         print("Stock Predictor")
 
-        df = self.loadData(trainFile)
+        df = self.loadData(train_file)
         print("Data loaded")
 
         new_dataset = self.cleanData(df.copy())
@@ -111,7 +110,8 @@ class LSTMAlgorithm:
         steps = 60
         predictions = None
 
-        current = datetime.datetime.fromisoformat(dataset['Date'].values[-1])
+        current = datetime.datetime.fromisoformat(
+            dataset['Date'].values[-1]) + datetime.timedelta(minutes=1)
         for i in range(steps):
             # print(dataset)
             inputs = dataset['Close'].values[-60:]
