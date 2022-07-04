@@ -40,6 +40,7 @@ def Dash_Graph_Option(all_symbols, criterias):
                     id="mck_dropdown",
                     options=mck_options,
                     value=criterias['symbol'],
+                    # value='XMRBTC',
                     style={"width": "100%"},
                 ),
                 width=3,
