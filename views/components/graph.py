@@ -15,7 +15,7 @@ def Dash_Graph(dataset, prediction, history):
     fig = createBigFigure(dataset, prediction, history)
 
     mini_fig = createMiniFigure(dataset.tail(
-        final), prediction.head(final), history.tail(final))
+        final), prediction.head(final), history.tail(final+1))
     return html.Div([
         html.Br(),
         dbc.Row(

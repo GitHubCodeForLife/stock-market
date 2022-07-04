@@ -85,7 +85,9 @@ def Equals(criterias, tempCriterias):
 # # ================================INITIALIZATION ==================================
 websocket = SocketFactory.getSocket()
 
-all_symbols = None
+all_symbols = [
+    'XMRBTC'
+]
 
 
 def callback(data):
@@ -94,6 +96,7 @@ def callback(data):
 
 
 websocket.getAllSymbolTickets(callback)
+
 
 # ================================ UI AND EVENTS==================================
 app.layout = html.Div([
@@ -113,8 +116,8 @@ app.layout = html.Div([
 ])
 
 
-@app.callback(Output('live-update-text', 'children'),
-              Input('interval-component', 'n_intervals'))
+@ app.callback(Output('live-update-text', 'children'),
+               Input('interval-component', 'n_intervals'))
 def update_metrics(n):
     if criterias['isPredict'] == True | criterias['isTrain'] == True:
         return html.Div(
@@ -136,9 +139,9 @@ def update_option(mck, algorithm, features):
     if criterias['isTrain'] == True:
         return criterias['symbol'], criterias['algorithm'], criterias['features']
 
-    criterias['symbol'] = mck
-    criterias['algorithm'] = algorithm
-    criterias['features'] = features
+    criterias['symbol'] = mck == None and 'XMRBTC' or mck
+    criterias['algorithm'] = algorithm == None and 'LSTM' or algorithm
+    criterias['features'] = features == None and 'Close' or features
 
     # Flags
     criterias['isPredict'] = True
@@ -146,7 +149,7 @@ def update_option(mck, algorithm, features):
     # reset history
     history = pd.DataFrame()
     websocketJob.runAgain(criterias)
-    return mck, algorithm, features
+    return criterias['symbol'], criterias['algorithm'], criterias['features']
 
 
 # Update mck options

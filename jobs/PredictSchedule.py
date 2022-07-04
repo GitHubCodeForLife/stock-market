@@ -17,13 +17,13 @@ class PredictSchedule(threading.Thread):
     def run(self):
         print("PredictSchedule doJob")
         criterias_copy = self.criterias.copy()
-        train_file = FileWaiter().getTrainFile(
-            self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
+        train_file = FileWaiter().getDataFile(self.criterias['symbol'])
         model_file = FileWaiter().getModelFile(
             self.criterias['symbol'], self.criterias['algorithm'], self.criterias['features'])
 
         algorithm = AlgorithmFactory().getAlgorithm(
             self.criterias['algorithm'])
+        algorithm.setFeatures(self.criterias['features'])
         prediction, dataset = algorithm.run_predict(
             train_file, model_file)
         product = {'dataset': dataset,

@@ -5,14 +5,28 @@ from helper.log.LogService import LogService
 from keras.layers import LSTM, Dense
 from keras.models import Sequential, load_model
 from sklearn.preprocessing import MinMaxScaler
-
+from algorithms.utils.PriceROC import PriceROC
 scaler = MinMaxScaler(feature_range=(0, 1))
 
 
 class LSTMAlgorithm:
+    features = ['Close']
 
     def __init__(self):
         pass
+
+    def setFeatures(self, features):
+        self.features = features
+
+    def shouldUsePROC(self):
+        if 'PROC' in self.features:
+            return True
+        return False
+
+    def addPROCColumn(self,  dataset):
+        PROC = PriceROC.caculateROC_list(dataset['Close'].values)
+        dataset['PROC'] = PROC
+        return dataset
 
     def run_train(self, train_file, filename_model):
         print("Stock Trainee LSTM: " + train_file)
@@ -22,6 +36,9 @@ class LSTMAlgorithm:
 
         new_dataset = self.cleanData(df)
         print("Data Cleaned successfully")
+
+        if self.shouldUsePROC():
+            self.addPROCColumn(new_dataset)
 
         x_train, y_train = self.normalizeData(new_dataset)
         print("Data Normalized successfully")
@@ -43,6 +60,9 @@ class LSTMAlgorithm:
         dataset = pd.DataFrame()
         dataset['Date'] = df['Date']
         dataset['Close'] = df['Close']
+        if self.shouldUsePROC():
+            self.addPROCColumn(dataset)
+            # LogService.logAppendToFile(dataset)
 
         lstm_model = self.loadModel(filename_model)
 

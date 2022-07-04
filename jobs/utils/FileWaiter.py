@@ -20,8 +20,13 @@ class FileWaiter:
         return datetime_object
 
     @staticmethod
+    def getDataFile(symbol):
+        file = Constant.TRAIN_FOLDER + "/" + symbol + ".csv"
+        return file
+
+    @staticmethod
     def getTrainFile(symbol, algorithm, features):
-        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + "_" + "".join(features) + ".csv"
+        return Constant.TRAIN_FOLDER + "/" + symbol + ".csv"
 
     @staticmethod
     def getModelFile(symbol, algorithm, features):
