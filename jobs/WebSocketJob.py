@@ -90,6 +90,7 @@ class WebSocketJob(BaseJob):
         if (shouldTrain(model_file) == True):
             algorithm = AlgorithmFactory().getAlgorithm(
                 self.criterias['algorithm'])
+            algorithm.setFeatures(self.criterias['features'])
             algorithm.run_train(train_file, model_file)
             # LogService().logAppendToFile(
             #     "Train model for " + self.criterias['symbol'] + " " + self.criterias['algorithm'])

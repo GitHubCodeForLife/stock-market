@@ -3,6 +3,7 @@ from helper.Constant import Constant
 import json
 import os
 from datetime import datetime
+import numpy as np
 
 
 class FileWaiter:
@@ -28,9 +29,14 @@ class FileWaiter:
     def getTrainFile(symbol, algorithm, features):
         return Constant.TRAIN_FOLDER + "/" + symbol + ".csv"
 
+    def sort_features(features):
+        if isinstance(features, str):
+            return features
+        return np.sort(features)
+
     @staticmethod
     def getModelFile(symbol, algorithm, features):
-        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + "_" + "".join(features) + ".h5"
+        return Constant.TRAIN_FOLDER + "/" + symbol + "_" + algorithm + "_" + "".join(FileWaiter.sort_features(features)) + ".h5"
 
     def saveToTrainFile(self, data, symbol, algorithm):
 

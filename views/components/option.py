@@ -9,15 +9,15 @@ algorithm_options = [
     {"label": "RNN", "value": "RNN"},
     {"label": "XGboost", "value": "XGboost"},
     {"label": "Transformer and Time Embeddings",
-        "value": "Transformer and Time Embeddings"},
+        "value": "TfmAndTed"},
 ]
 
 feature_options = [
     {"label": "Close", "value": "Close"},
     {"label": "Price Rate Of Change ", "value": "PROC"},
     {"label": "RSI", "value": "RSI"},
-    {"label": " Bolling Bands", "value": " Bolling Bands"},
-    {"label": "Moving Average", "value": "Moving Average"},
+    {"label": "Bolling Bands", "value": "Bolling Bands"},
+    {"label": "Exponential Moving Average", "value": "EMA"},
     {"label": "Đường hỗ trợ/kháng cự (nâng cao)",
      "value": "Đường hỗ trợ/kháng cự(nâng cao)"},
 ]

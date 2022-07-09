@@ -150,8 +150,9 @@ class RNNAlgorithm:
             if predictions is None:
                 predictions = temp_df
             else:
-                predictions = predictions.append(temp_df, ignore_index=True)
+                predictions = pd.concat(
+                    [predictions, temp_df], ignore_index=True)
             current = current + datetime.timedelta(minutes=1)
-            dataset = dataset.append(temp_df, ignore_index=True)
+            dataset = pd.concat([dataset, temp_df], ignore_index=True)
 
         return predictions
