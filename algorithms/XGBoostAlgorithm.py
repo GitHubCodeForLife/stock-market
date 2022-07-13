@@ -7,25 +7,41 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from xgboost import plot_importance, plot_tree
 from helper.log.LogService import LogService
 from algorithms.utils.PriceROC import PriceROC
+from algorithms.utils.ExpMovingAverage import ExpMovingAverage
 
 
 class XGBoostAlgorithm:
-    features = ['Close']
+    features = ['Close','EMA']
 
     def __init__(self):
         pass
 
-    def setFeatures(self, features):
-        self.features = features
+    def setFeatures(self, features_lst):
+        features_set = set(['Close','EMA'])
+        if isinstance(features_lst, str):
+            features_set.add(features_lst)
+        else:
+            features_set.update(features_lst)
+        self.features = list(features_set)
 
     def shouldUsePROC(self):
         if 'PROC' in self.features:
             return True
         return False
 
+    def shouldUseEMA(self):
+        if 'EMA' in self.features:
+            return True
+        return False
+
     def addPROCColumn(self,  dataset):
         PROC = PriceROC.caculateROC_list(dataset['Close'].values)
         dataset['PROC'] = PROC
+        return dataset
+
+    def addEMAColumn(self,  dataset):
+        EMA = ExpMovingAverage.calculateEMA_list(dataset['Close'].values)
+        dataset['EMA'] = EMA
         return dataset
 
     def run_train(self, train_file, filename_model):
@@ -42,40 +58,43 @@ class XGBoostAlgorithm:
 
         if self.shouldUsePROC():
             self.addPROCColumn(dataset)
+        if self.shouldUseEMA():
+            self.addEMAColumn(dataset)
 
         # multi steps forcasting
-        steps = 100
-
-        train_df, valid_df = self.devideData(dataset)
+        steps = 60
 
         predictions = None
         current = datetime.datetime.fromisoformat(
             dataset["Date"].values[-1]) + datetime.timedelta(minutes=1)
         for i in range(steps):
+            train_df, valid_df = self.devideData(dataset)
             prediction = self.xgboost_predict_and_forcast(train_df, valid_df)
+            print("prediction: ")
+            print(prediction)
+            temp_df = pd.DataFrame(columns=dataset.columns, index=[0])
 
-            temp_df = pd.DataFrame({"Close": prediction, "Date": current})
+            temp_df["Close"][0] = prediction[0]
+            temp_df["Date"][0] = current
             if self.shouldUsePROC():
-                self.caculatePROCForPredition(predictions, temp_df)
-
+                temp_df["PROC"] = PriceROC.caculateROC(
+                    prediction[0], dataset['Close'][dataset.index[-1]])
+            if self.shouldUseEMA():
+                temp_df["EMA"] = ExpMovingAverage.calculateEMA(
+                    prediction[0], dataset['EMA'][dataset.index[-1]])
+            print(temp_df)
             if predictions is None:
                 predictions = temp_df
             else:
-                predictions = predictions.append(temp_df, ignore_index=True)
-
-            dataset = dataset.append(temp_df, ignore_index=True)
-            train_df, valid_df = self.devideData(dataset)
+                predictions = pd.concat(
+                    [predictions, temp_df], ignore_index=True)
             current = current + datetime.timedelta(minutes=1)
-
+            dataset = pd.concat([dataset, temp_df], ignore_index=True)
+        if self.shouldUsePROC():
+            predictions.drop("PROC", axis=1, inplace=True)
+        if self.shouldUseEMA():
+            predictions.drop("EMA", axis=1, inplace=True)
         return predictions, df
-
-    def caculatePROCForPredition(self, predictions, temp_df):
-        if predictions is None:
-            temp_df['PROC'] = 0
-            return
-        PROC = PriceROC.caculateROC_list(predictions['Close'].values)
-        predictions['PROC'] = PROC
-        temp_df['PROC'] = PROC[-1]
 
     def devideData(self, dataset):
         le = int(len(dataset)*0.9 - 1)
@@ -87,7 +106,13 @@ class XGBoostAlgorithm:
     def loadData(self, filename):
         return pd.read_csv(filename)
 
+    def get_columns(self):
+        res = self.features.copy()
+        res.remove("Close")
+        return res
+
     def create_features(self, df, label=None):
+        label = self.get_columns()
         X = df[label]
         if label:
             y = df['Close']
@@ -96,34 +121,15 @@ class XGBoostAlgorithm:
 
     def xgboost_predict_and_forcast(self, train_df, valid_df):
         # build modle
-
         X_train, y_train = self.create_features(train_df, self.features)
         X_valid, y_valid = self.create_features(valid_df, self.features)
+
         reg = xgb.XGBRegressor(n_estimators=1000)
         reg.fit(X_train, y_train,
                 eval_set=[(X_train, y_train), (X_valid, y_valid)],
                 early_stopping_rounds=50,
                 verbose=False)
 
-        # forcast
-        data = self.createInput(X_valid)
-
-        dft = pd.DataFrame(data=data, columns=self.getColumns())
+        dft = pd.DataFrame(data=[X_valid.iloc[-1]])
         result = reg.predict(dft)
         return result
-
-    def createInput(self, X_valid):
-
-        data = None
-        if self.shouldUsePROC():
-            # create array has shape (1,2)
-            data = np.array([[X_valid.values[-1][0], X_valid.values[-1][1]]])
-
-        else:
-            data = np.array([[X_valid.values[-1][0]]])
-        return data
-
-    def getColumns(self):
-        if self.shouldUsePROC():
-            return ['PROC', 'Close']
-        return ['Close']

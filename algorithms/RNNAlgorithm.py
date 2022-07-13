@@ -6,6 +6,7 @@ from keras.layers import SimpleRNN, Dense
 from keras.models import Sequential, load_model
 from sklearn.preprocessing import MinMaxScaler
 from algorithms.utils.PriceROC import PriceROC
+from algorithms.utils.ExpMovingAverage import ExpMovingAverage
 
 scaler = MinMaxScaler(feature_range=(0, 1))
 
@@ -16,17 +17,32 @@ class RNNAlgorithm:
     def __init__(self):
         pass
 
-    def setFeatures(self, features):
-        self.features = features
+    def setFeatures(self, features_lst):
+        features_set = set(['Close'])
+        if isinstance(features_lst, str):
+            features_set.add(features_lst)
+        else:
+            features_set.update(features_lst)
+        self.features = list(features_set)
 
     def shouldUsePROC(self):
         if 'PROC' in self.features:
             return True
         return False
 
+    def shouldUseEMA(self):
+        if 'EMA' in self.features:
+            return True
+        return False
+
     def addPROCColumn(self,  dataset):
         PROC = PriceROC.caculateROC_list(dataset['Close'].values)
         dataset['PROC'] = PROC
+        return dataset
+
+    def addEMAColumn(self,  dataset):
+        EMA = ExpMovingAverage.calculateEMA_list(dataset['Close'].values)
+        dataset['EMA'] = EMA
         return dataset
 
     def run_train(self, train_file, filename_model):
@@ -40,6 +56,8 @@ class RNNAlgorithm:
 
         if self.shouldUsePROC():
             self.addPROCColumn(new_dataset)
+        if self.shouldUseEMA():
+            self.addEMAColumn(new_dataset)
 
         x_train, y_train = self.normalizeData(new_dataset)
         print("Data Normalized successfully")
@@ -64,6 +82,8 @@ class RNNAlgorithm:
 
         if self.shouldUsePROC():
             self.addPROCColumn(dataset)
+        if self.shouldUseEMA():
+            self.addEMAColumn(dataset)
 
         lstm_model = self.loadModel(filename_model)
 
@@ -99,24 +119,29 @@ class RNNAlgorithm:
         x_train_data, y_train_data = [], []
 
         for i in range(60, len(train_data)):
-            x_train_data.append(scaled_data[i-60:i, 0])
+            x_train_data.append(scaled_data[i-60:i])
             y_train_data.append(scaled_data[i, 0])
 
         x_train_data, y_train_data = np.array(
             x_train_data), np.array(y_train_data)
-        x_train_data = np.reshape(
-            x_train_data, (x_train_data.shape[0], x_train_data.shape[1], 1))
+        # x_train_data = np.reshape(
+        #     x_train_data, (x_train_data.shape[0], x_train_data.shape[1], 1))
 
         return x_train_data, y_train_data
 
     def trainedModel(self, x_train_data, y_train_data):
+        print("X train shape: ")
+        print(x_train_data.shape)
+        print("Y train shape: ")
+        print(y_train_data.shape)
         lstm_model = Sequential()
         lstm_model.add(
-            SimpleRNN(units=50, return_sequences=True, input_shape=(60, 1)))
+            SimpleRNN(units=50, return_sequences=True, input_shape=(60, self.features.__len__())))
         lstm_model.add(SimpleRNN(units=50))
         lstm_model.add(Dense(1))
         lstm_model.compile(loss='mean_squared_error',
                            metrics='accuracy', optimizer='adam')
+        lstm_model.summary()
         lstm_model.fit(x_train_data, y_train_data,
                        epochs=1, batch_size=1, verbose=2)
         return lstm_model
@@ -134,19 +159,26 @@ class RNNAlgorithm:
         current = datetime.datetime.fromisoformat(
             dataset['Date'].values[-1]) + datetime.timedelta(minutes=1)
         for i in range(steps):
-            # print(dataset)
-            inputs = dataset['Close'].values[-60:]
-            inputs = inputs.reshape(-1, 1)
-            inputs = scaler.transform(inputs)
+            inputs = dataset.loc[:, dataset.columns != 'Date']
+            inputs = scaler.fit_transform(inputs)
+            inputs = np.array(inputs)[-60:]
+            X_test = inputs
+            X_test = np.reshape(X_test, (1, X_test.shape[0], X_test.shape[1]))
 
-            X_test = np.array(inputs)
-            X_test = np.reshape(X_test, (1, 60))
             closing_price = model.predict(X_test)
-            closing_price = scaler.inverse_transform(closing_price)
+            scaler.fit_transform(dataset['Close'].values.reshape(-1, 1))
+            closing_price = scaler.inverse_transform(
+                closing_price.reshape(-1, 1))
 
-            temp_df = pd.DataFrame(
-                {"Close": closing_price[0], "Date": current})
-            # print(temp_df)
+            temp_df = pd.DataFrame(columns=dataset.columns, index=[0])
+            temp_df["Close"][0] = closing_price[0][0]
+            temp_df["Date"][0] = current
+            if self.shouldUsePROC():
+                temp_df["PROC"][0] = PriceROC.caculateROC(
+                    closing_price[0][0], dataset['Close'][dataset.index[-1]])
+            if self.shouldUseEMA():
+                temp_df["EMA"][0] = ExpMovingAverage.calculateEMA(
+                    closing_price[0][0], dataset['EMA'][dataset.index[-1]])
             if predictions is None:
                 predictions = temp_df
             else:
@@ -154,5 +186,8 @@ class RNNAlgorithm:
                     [predictions, temp_df], ignore_index=True)
             current = current + datetime.timedelta(minutes=1)
             dataset = pd.concat([dataset, temp_df], ignore_index=True)
-
+        if self.shouldUsePROC():
+            predictions.drop("PROC", axis=1, inplace=True)
+        if self.shouldUseEMA():
+            predictions.drop("EMA", axis=1, inplace=True)
         return predictions

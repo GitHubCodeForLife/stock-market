@@ -60,8 +60,6 @@ class LSTMAlgorithm:
             self.addEMAColumn(new_dataset)
 
         x_train, y_train = self.normalizeData(new_dataset)
-        print("X train, Y train: ")
-        print(x_train.shape, y_train.shape)
         print("Data Normalized successfully")
 
         lstm_model = self.trainedModel(x_train, y_train)
